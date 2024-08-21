@@ -18,51 +18,60 @@ public class EnemyController : MonoBehaviour
     private Animator animator; // 애니메이터
 
     void Start()
-    {
-        currentHealth = maxHealth;
-        player = GameObject.FindGameObjectWithTag("Player").transform;
-        currentPatrolIndex = 0;
-        isChasing = false;
-        animator = GetComponent<Animator>();
-    }
+{
+    currentHealth = maxHealth;
+    player = GameObject.FindGameObjectWithTag("Player").transform;
+    currentPatrolIndex = 0; // 패트롤 인덱스는 0으로 초기화
+    isChasing = false;
+    animator = GetComponent<Animator>();
 
+    // 패트롤 포인트가 없으면 초기화
+    if (patrolPoints.Length == 0)
+    {
+        Debug.LogWarning("No patrol points set for EnemyController.");
+    }
+}
     void Update()
+{
+    if (patrolPoints.Length == 0)
+        return; // 패트롤 포인트가 없으면 아무 작업도 하지 않음
+
+    if (Vector3.Distance(transform.position, player.position) <= detectionRange)
     {
-        if (Vector3.Distance(transform.position, player.position) <= detectionRange)
-        {
-            isChasing = true;
-        }
-        else
-        {
-            isChasing = false;
-        }
-
-        if (isChasing)
-        {
-            ChasePlayer();
-        }
-        else
-        {
-            Patrol();
-        }
-
-        if (Vector3.Distance(transform.position, player.position) <= attackRange)
-        {
-            AttackPlayer();
-        }
+        isChasing = true;
+    }
+    else
+    {
+        isChasing = false;
     }
 
+    if (isChasing)
+    {
+        ChasePlayer();
+    }
+    else
+    {
+        Patrol();
+    }
+
+    if (Vector3.Distance(transform.position, player.position) <= attackRange)
+    {
+        AttackPlayer();
+    }
+}
     void Patrol()
+{
+    if (patrolPoints.Length == 0)
+        return; // 패트롤 포인트가 없으면 아무 작업도 하지 않음
+
+    Transform targetPoint = patrolPoints[currentPatrolIndex];
+    transform.position = Vector3.MoveTowards(transform.position, targetPoint.position, speed * Time.deltaTime);
+
+    if (Vector3.Distance(transform.position, targetPoint.position) < 0.1f)
     {
-        Transform targetPoint = patrolPoints[currentPatrolIndex];
-        transform.position = Vector3.MoveTowards(transform.position, targetPoint.position, speed * Time.deltaTime);
-
-        if (Vector3.Distance(transform.position, targetPoint.position) < 0.1f)
-        {
-            currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
-        }
+        currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
     }
-
+}
     void ChasePlayer()
     {
         transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
