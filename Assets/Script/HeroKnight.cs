@@ -1,191 +1,251 @@
-﻿// HeroKnight.cs
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.UI;
 
 public class HeroKnight : MonoBehaviour
 {
-    [SerializeField] float m_speed = 4.0f;
-    [SerializeField] float m_jumpForce = 7.5f;
-    [SerializeField] float m_rollForce = 6.0f;
-    //[SerializeField] bool m_noBlood = false;
-    [SerializeField] GameObject m_slideDust;
+    [SerializeField] private float speed = 4.0f;
+    [SerializeField] private float jumpForce = 7.5f;
+    [SerializeField] private float rollForce = 6.0f;
+    //[SerializeField] private bool noBlood = false;
+    [SerializeField] private GameObject slideDustPrefab;
 
-    private Animator m_animator;
-    private Rigidbody2D m_body2d;
-    private Sensor_HeroKnight m_groundSensor;
-    private Sensor_HeroKnight m_wallSensorR1;
-    private Sensor_HeroKnight m_wallSensorR2;
-    private Sensor_HeroKnight m_wallSensorL1;
-    private Sensor_HeroKnight m_wallSensorL2;
-    private bool m_isWallSliding = false;
-    private bool m_grounded = false;
-    private bool m_rolling = false;
+    private Animator animator;
+    private Rigidbody2D rb;
+    private Sensor_HeroKnight groundSensor;
+    private Sensor_HeroKnight wallSensorR1;
+    private Sensor_HeroKnight wallSensorR2;
+    private Sensor_HeroKnight wallSensorL1;
+    private Sensor_HeroKnight wallSensorL2;
+
+    private bool isWallSliding = false;
+    private bool isGrounded = false;
+    private bool isRolling = false;
     private bool isChargingJump = false;
-    private int m_facingDirection = 1;
-    private int m_currentAttack = 0;
-    private float m_timeSinceAttack = 0.0f;
-    private float m_delayToIdle = 0.0f;
-    private float m_rollDuration = 8.0f / 14.0f;
-    private float m_rollCurrentTime;
-    private float JumpTimeLimit = 3.0f;
-    private float JumpTime = 1.0f;
+    
+    private int facingDirection = 1;
+    private int currentAttack = 0;
+    
+    private float timeSinceLastAttack = 0.0f;
+    private float idleDelay = 0.0f;
+    private float rollDuration = 8.0f / 14.0f;
+    private float rollTime;
+    
+    private float jumpTimeLimit = 3.0f;
+    private float jumpChargeTime = 1.0f;
+    
+    public float currentHealth;
+    public float maxHealth;
 
-    // 체력
-    public float health = 100f;
-    public float MaxHP = 100f; // 최대 체력을 정의
+    public Slider healthBarSlider;
 
-    void Start()
+    private void Start()
     {
-        m_animator = GetComponent<Animator>();
-        m_body2d = GetComponent<Rigidbody2D>();
-        m_groundSensor = transform.Find("GroundSensor").GetComponent<Sensor_HeroKnight>();
-        m_wallSensorR1 = transform.Find("WallSensor_R1").GetComponent<Sensor_HeroKnight>();
-        m_wallSensorR2 = transform.Find("WallSensor_R2").GetComponent<Sensor_HeroKnight>();
-        m_wallSensorL1 = transform.Find("WallSensor_L1").GetComponent<Sensor_HeroKnight>();
-        m_wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
+        animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody2D>();
+        
+        InitializeSensors();
+        SetHp(100f); // 예시: 최대 체력을 100으로 설정
     }
 
-    void Update()
+    private void InitializeSensors()
     {
-        // 타이머 증가
-        m_timeSinceAttack += Time.deltaTime;
-        if (m_rolling) m_rollCurrentTime += Time.deltaTime;
+        groundSensor = transform.Find("GroundSensor").GetComponent<Sensor_HeroKnight>();
+        wallSensorR1 = transform.Find("WallSensor_R1").GetComponent<Sensor_HeroKnight>();
+        wallSensorR2 = transform.Find("WallSensor_R2").GetComponent<Sensor_HeroKnight>();
+        wallSensorL1 = transform.Find("WallSensor_L1").GetComponent<Sensor_HeroKnight>();
+        wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
+    }
 
-        // 롤 지속 시간 초과 시 롤 비활성화
-        if (m_rollCurrentTime > m_rollDuration) m_rolling = false;
+    private void Update()
+    {
+        UpdateTimers();
+        CheckGroundStatus();
+        HandleInput();
+        //UpdateAnimatorState();
+    }
 
-        // 바닥에 착지했는지 확인
-        if (!m_grounded && m_groundSensor.State())
+    private void UpdateTimers()
+    {
+        timeSinceLastAttack += Time.deltaTime;
+
+        if (isRolling)
         {
-            m_grounded = true;
-            m_animator.SetBool("Grounded", m_grounded);
+            rollTime += Time.deltaTime;
+            if (rollTime > rollDuration)
+                isRolling = false;
         }
+    }
 
-        // 낙하 시작 확인
-        if (m_grounded && !m_groundSensor.State())
+    private void CheckGroundStatus()
+    {
+        if (!isGrounded && groundSensor.State())
         {
-            m_grounded = false;
-            m_animator.SetBool("Grounded", m_grounded);
+            isGrounded = true;
+            animator.SetBool("Grounded", isGrounded);
         }
+        else if (isGrounded && !groundSensor.State())
+        {
+            isGrounded = false;
+            animator.SetBool("Grounded", isGrounded);
+        }
+    }
 
-        // 입력과 이동 처리
+    private void HandleInput()
+    {
         float inputX = Input.GetAxis("Horizontal");
+        HandleMovement(inputX);
+        HandleActions(inputX);
+    }
+
+    private void HandleMovement(float inputX)
+    {
         if (inputX > 0)
         {
             GetComponent<SpriteRenderer>().flipX = false;
-            m_facingDirection = 1;
+            facingDirection = 1;
         }
         else if (inputX < 0)
         {
             GetComponent<SpriteRenderer>().flipX = true;
-            m_facingDirection = -1;
+            facingDirection = -1;
         }
 
-        if (!m_rolling && !isChargingJump)
-            m_body2d.velocity = new Vector2(inputX * m_speed, m_body2d.velocity.y);
+        if (!isRolling && !isChargingJump)
+            rb.velocity = new Vector2(inputX * speed, rb.velocity.y);
 
-        m_animator.SetFloat("AirSpeedY", m_body2d.velocity.y);
+        animator.SetFloat("AirSpeedY", rb.velocity.y);
+    }
 
-        // 벽 슬라이드
-        m_isWallSliding = (m_wallSensorR1.State() && m_wallSensorR2.State()) || (m_wallSensorL1.State() && m_wallSensorL2.State());
-        m_animator.SetBool("WallSlide", m_isWallSliding);
-
-        // 공격
-        if (Input.GetMouseButtonDown(0) && m_timeSinceAttack > 0.25f && !m_rolling)
+    private void HandleActions(float inputX)
+    {
+        if (Input.GetMouseButtonDown(0) && timeSinceLastAttack > 0.25f && !isRolling)
         {
-            m_currentAttack++;
-            if (m_currentAttack > 3) m_currentAttack = 1;
-            if (m_timeSinceAttack > 1.0f) m_currentAttack = 1;
-            m_animator.SetTrigger("Attack" + m_currentAttack);
-            m_timeSinceAttack = 0.0f;
+            PerformAttack();
         }
-
-        // 블록
-        if (Input.GetMouseButtonDown(1) && !m_rolling)
+        else if (Input.GetMouseButtonDown(1) && !isRolling)
         {
-            m_animator.SetTrigger("Block");
-            m_animator.SetBool("IdleBlock", true);
+            animator.SetTrigger("Block");
+            animator.SetBool("IdleBlock", true);
         }
         else if (Input.GetMouseButtonUp(1))
         {
-            m_animator.SetBool("IdleBlock", false);
+            animator.SetBool("IdleBlock", false);
         }
-
-        // 롤
-        if (Input.GetKeyDown("left shift") && !m_rolling && !m_isWallSliding)
+        else if (Input.GetKeyDown("left shift") && !isRolling && !isWallSliding)
         {
-            m_rolling = true;
-            m_animator.SetTrigger("Roll");
-            m_body2d.velocity = new Vector2(m_facingDirection * m_rollForce, m_body2d.velocity.y);
+            Roll();
         }
-
-        // 점프
-        if (Input.GetKeyUp("space") && m_grounded && !m_rolling)
+        else if (Input.GetKeyUp("space") && isGrounded && !isRolling)
         {
-            isChargingJump = false;
-            m_animator.SetTrigger("Jump");
-            m_grounded = false;
-            m_animator.SetBool("Grounded", m_grounded);
-            m_body2d.AddForce(Vector2.up * m_jumpForce * JumpTime, ForceMode2D.Impulse);
-            JumpTime = 1.0f;
-            m_groundSensor.Disable(0.2f);
+            Jump();
         }
-
-        if (Input.GetKey("space") && m_grounded && !m_rolling)
+        else if (Input.GetKey("space") && isGrounded && !isRolling)
         {
-            isChargingJump = true;
-            if (JumpTimeLimit > JumpTime) JumpTime += 0.1f;
+            ChargeJump();
         }
-
-        // 달리기
-        if (Mathf.Abs(inputX) > Mathf.Epsilon)
+        else if (Mathf.Abs(inputX) > Mathf.Epsilon)
         {
-            m_delayToIdle = 0.05f;
-            m_animator.SetInteger("AnimState", 1);
+            SetRunningState();
         }
         else
         {
-            m_delayToIdle -= Time.deltaTime;
-            if (m_delayToIdle < 0)
-                m_animator.SetInteger("AnimState", 0);
+            SetIdleState();
         }
     }
 
-    void AE_SlideDust()
+    private void PerformAttack()
     {
-        Vector3 spawnPosition = m_facingDirection == 1 ? m_wallSensorR2.transform.position : m_wallSensorL2.transform.position;
+        currentAttack = (currentAttack % 3) + 1;
 
-        if (m_slideDust != null)
-        {
-            GameObject dust = Instantiate(m_slideDust, spawnPosition, Quaternion.identity);
-            dust.transform.localScale = new Vector3(m_facingDirection, 1, 1);
-        }
+        if (timeSinceLastAttack > 1.0f)
+            currentAttack = 1;
+
+        animator.SetTrigger("Attack" + currentAttack);
+        timeSinceLastAttack = 0.0f;
+    }
+
+    private void Roll()
+    {
+        isRolling = true;
+        animator.SetTrigger("Roll");
+        rb.velocity = new Vector2(facingDirection * rollForce, rb.velocity.y);
+    }
+
+    private void Jump()
+    {
+        isChargingJump = false;
+        animator.SetTrigger("Jump");
+        isGrounded = false;
+        animator.SetBool("Grounded", isGrounded);
+        rb.AddForce(Vector3.up * jumpForce * jumpChargeTime, ForceMode2D.Impulse);
+        jumpChargeTime = 1.0f;
+        groundSensor.Disable(0.2f);
+    }
+
+    private void ChargeJump()
+    {
+        isChargingJump = true;
+        if (jumpTimeLimit > jumpChargeTime)
+            jumpChargeTime += 0.1f;
+    }
+
+    private void SetRunningState()
+    {
+        idleDelay = 0.05f;
+        animator.SetInteger("AnimState", 1);
+    }
+
+    private void SetIdleState()
+    {
+        idleDelay -= Time.deltaTime;
+        if (idleDelay < 0)
+            animator.SetInteger("AnimState", 0);
+    }
+
+    public void SetHp(float amount)
+    {
+        maxHealth = amount;
+        currentHealth = maxHealth;
+    }
+
+    public void UpdateHealthBar()
+    {
+        if (healthBarSlider != null)
+            healthBarSlider.value = currentHealth / maxHealth;
     }
 
     public void TakeDamage(float damage)
     {
-        health -= damage;
-        if (health <= 0)
+        if (maxHealth == 0 || currentHealth <= 0)
+            return;
+
+        currentHealth -= damage;
+        UpdateHealthBar();
+
+        if (currentHealth <= 0)
         {
-            Die();
+            // Implement death logic here
         }
     }
-
     public void RestoreHealth(float amount)
+{
+    currentHealth += amount;
+    if (currentHealth > maxHealth)
     {
-        health += amount;
-        // 체력이 최대치를 초과하지 않도록 클램프
-        health = Mathf.Clamp(health, 0, MaxHP);
+        currentHealth = maxHealth; // 최대 체력을 초과하지 않도록 함
     }
 
-    public float currentHP
-    {
-        get { return health; }
-        set { health = Mathf.Clamp(value, 0, MaxHP); } // 체력을 0과 MaxHP 사이로 제한
-    }
+    UpdateHealthBar(); // 체력 바 업데이트
+}
 
-    void Die()
+    private void AE_SlideDust()
     {
-        m_animator.SetTrigger("Death");
-        // 추가적인 사망 로직 처리
+        Vector3 spawnPosition = (facingDirection == 1) ? wallSensorR2.transform.position : wallSensorL2.transform.position;
+
+        if (slideDustPrefab != null)
+        {
+            GameObject dust = Instantiate(slideDustPrefab, spawnPosition, gameObject.transform.localRotation);
+            dust.transform.localScale = new Vector3(facingDirection, 1, 1);
+        }
     }
 }

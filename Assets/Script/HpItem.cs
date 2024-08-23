@@ -11,7 +11,7 @@ public class HPItem : MonoBehaviour
             HeroKnight heroKnight = other.GetComponent<HeroKnight>();
             if (heroKnight != null)
             {
-                heroKnight.RestoreHealth(healAmount);
+                heroKnight.RestoreHealth(healAmount); // 체력 회복
                 Destroy(gameObject); // 아이템 사용 후 제거
             }
         }

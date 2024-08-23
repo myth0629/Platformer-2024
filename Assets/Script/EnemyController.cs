@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
@@ -14,6 +13,7 @@ public class EnemyController : MonoBehaviour
     private int currentHealth; // 현재 체력
     private Transform player; // 플레이어의 위치
     private int currentPatrolIndex; // 현재 패트롤 포인트 인덱스
+    private int currentPointIndex = 0;
     private bool isChasing; // 플레이어를 추적 중인지 여부
     private Animator animator; // 애니메이터
 
@@ -26,10 +26,14 @@ public class EnemyController : MonoBehaviour
     animator = GetComponent<Animator>();
 
     // 패트롤 포인트가 없으면 초기화
-    if (patrolPoints.Length == 0)
-    {
-        Debug.LogWarning("No patrol points set for EnemyController.");
-    }
+    if (patrolPoints == null || patrolPoints.Length == 0)
+        {
+            Debug.LogWarning("No patrol points set for EnemyController.");
+            return;
+        }
+
+        // 적의 초기 위치를 첫 번째 순찰 지점으로 설정
+        transform.position = patrolPoints[currentPointIndex].position;
 }
     void Update()
 {

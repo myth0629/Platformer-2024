@@ -37,16 +37,17 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
-        // 초기화: MainCanvas만 보이도록 설정하고, Player와 Enemy를 비활성화
+        // 초기화 코드
         ShowMainCanvas();
-        settingCanvas.SetActive(false); // 초기에는 SettingCanvas 비활성화
+        settingCanvas.SetActive(false);
         HeroKnight.SetActive(false);
-        playerCanvas.SetActive(false); // 플레이어 체력바 캔버스 비활성화
-        // 적 프리팹은 미리 비활성화된 상태로 설정
+        playerCanvas.SetActive(false);
         enemyPrefab.SetActive(false);
-
-        // 경과 시간 초기화
         elapsedTime = 0f;
+
+        // 게임 시작 시 커서 보이도록 설정
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
     }
 
     void Update()
@@ -96,8 +97,10 @@ public class UIManager : MonoBehaviour
 
         // Enemy 랜덤 스폰 및 활성화
         SpawnEnemy();
-    }
-
+        // 튜토리얼 시작 시 커서를 보이게 설정
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }   
     public void OnReturnButtonClicked()
     {
         // MainCanvas로 돌아가기
@@ -131,7 +134,7 @@ public class UIManager : MonoBehaviour
         HeroKnight playerScript = HeroKnight.GetComponent<HeroKnight>();
         if (playerScript != null)
         {
-            playerScript.currentHP = playerScript.MaxHP;  // 플레이어 체력 리셋
+            playerScript.currentHealth = playerScript.maxHealth;  // 플레이어 체력 리셋
         }
 
         // Again 버튼을 눌렀을 때 튜토리얼 상태로 돌아가기
@@ -166,9 +169,12 @@ public class UIManager : MonoBehaviour
         settingCanvas.SetActive(false);
         endCanvas.SetActive(false);
         clearCanvas.SetActive(false);
-        playerCanvas.SetActive(false); // MainCanvas가 보일 때 playerCanvas 비활성화
+        playerCanvas.SetActive(false);
         SwitchToMainCamera();
-        isTutorialActive = false;  // TutorialCanvas 비활성화
+        isTutorialActive = false;
+        // 메인 화면으로 돌아왔을 때 커서를 보이게 설정
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
     }
 
     private void ShowTutorialCanvas()
@@ -260,11 +266,11 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    public void UpdateHealthBar(float currentHP, float maxHP)
+    public void UpdateHealthBar(float currentHealth, float maxHealth)
     {
         if (healthBar != null)
         {
-            float healthRatio = currentHP / maxHP;
+            float healthRatio = currentHealth / maxHealth;
             healthBar.value = Mathf.Clamp01(healthRatio);
         }
     }
