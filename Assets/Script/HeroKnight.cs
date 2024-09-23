@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class HeroKnight : MonoBehaviour
@@ -37,6 +38,13 @@ public class HeroKnight : MonoBehaviour
     public float maxHealth;
 
     public Slider healthBarSlider;
+    public float attackRange = 1.5f;
+    public int attackDamage = 10;
+    public LayerMask enemyLayer;
+    public bool isInvincible;
+    public LayerMask groundLayer;
+    public float groundCheckDistance = 0.1f;
+
 
     private void Start()
     {
@@ -78,14 +86,13 @@ public class HeroKnight : MonoBehaviour
 
     private void CheckGroundStatus()
     {
-        if (!isGrounded && groundSensor.State())
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
+
+        bool newGroundedState = hit.collider != null;
+
+        if (isGrounded != newGroundedState)
         {
-            isGrounded = true;
-            animator.SetBool("Grounded", isGrounded);
-        }
-        else if (isGrounded && !groundSensor.State())
-        {
-            isGrounded = false;
+            isGrounded = newGroundedState;
             animator.SetBool("Grounded", isGrounded);
         }
     }
@@ -122,24 +129,25 @@ public class HeroKnight : MonoBehaviour
         {
             PerformAttack();
         }
-        else if (Input.GetMouseButtonDown(1) && !isRolling)
+        // else if (Input.GetMouseButtonDown(1) && !isRolling)
+        // {
+        //     animator.SetTrigger("Block");
+        //     animator.SetBool("IdleBlock", true);
+        // }
+        // else if (Input.GetMouseButtonUp(1))
+        // {
+        //     animator.SetBool("IdleBlock", false);
+        // }
+        // else if (Input.GetKeyDown("left shift") && !isRolling && !isWallSliding)
+        // {
+        //     Roll();
+        // }
+        else if (Input.GetKeyUp("space") && isGrounded)
         {
-            animator.SetTrigger("Block");
-            animator.SetBool("IdleBlock", true);
-        }
-        else if (Input.GetMouseButtonUp(1))
-        {
-            animator.SetBool("IdleBlock", false);
-        }
-        else if (Input.GetKeyDown("left shift") && !isRolling && !isWallSliding)
-        {
-            Roll();
-        }
-        else if (Input.GetKeyUp("space") && isGrounded && !isRolling)
-        {
+            isChargingJump = false;
             Jump();
         }
-        else if (Input.GetKey("space") && isGrounded && !isRolling)
+        else if (Input.GetKey("space") && isGrounded)
         {
             ChargeJump();
         }
@@ -162,6 +170,13 @@ public class HeroKnight : MonoBehaviour
 
         animator.SetTrigger("Attack" + currentAttack);
         timeSinceLastAttack = 0.0f;
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, attackRange, enemyLayer);
+
+        foreach(Collider2D enemy in hitEnemies)
+        {
+            enemy.GetComponent<GoblinController>().TakeDamage(attackDamage);
+        }
     }
 
     private void Roll()
@@ -173,17 +188,18 @@ public class HeroKnight : MonoBehaviour
 
     private void Jump()
     {
+        animator.SetBool("IdleBlock", false);
         isChargingJump = false;
         animator.SetTrigger("Jump");
         isGrounded = false;
         animator.SetBool("Grounded", isGrounded);
         rb.AddForce(Vector3.up * jumpForce * jumpChargeTime, ForceMode2D.Impulse);
         jumpChargeTime = 1.0f;
-        groundSensor.Disable(0.2f);
     }
 
     private void ChargeJump()
     {
+        animator.SetBool("IdleBlock", true);
         isChargingJump = true;
         if (jumpTimeLimit > jumpChargeTime)
             jumpChargeTime += 0.1f;
@@ -216,27 +232,51 @@ public class HeroKnight : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        if (maxHealth == 0 || currentHealth <= 0)
+        if (isInvincible || maxHealth == 0 || currentHealth <= 0)
             return;
 
         currentHealth -= damage;
+        animator.SetTrigger("Hurt");
         UpdateHealthBar();
+        Debug.Log("플레이어 hp : " + currentHealth);
 
         if (currentHealth <= 0)
         {
-            // Implement death logic here
+            Death();
+        }
+        else
+        {
+            StartCoroutine(DamageCoolTime());
         }
     }
-    public void RestoreHealth(float amount)
-{
-    currentHealth += amount;
-    if (currentHealth > maxHealth)
+
+    IEnumerator DamageCoolTime()
     {
-        currentHealth = maxHealth; // 최대 체력을 초과하지 않도록 함
+        isInvincible = true;
+        yield return new WaitForSeconds(1);
+        isInvincible = false;
     }
 
-    UpdateHealthBar(); // 체력 바 업데이트
-}
+    public void Death()
+    {
+        animator.SetTrigger("Death");
+
+        GetComponent<HeroKnight>().enabled = false; // 조작 정지
+        rb.velocity = Vector2.zero; // 이동중이라면 정지
+        rb.isKinematic = true; // 물리 작용 비활성화
+
+    }
+
+    public void RestoreHealth(float amount)
+    {
+        currentHealth += amount;
+        if (currentHealth > maxHealth)
+        {
+            currentHealth = maxHealth; // 최대 체력을 초과하지 않도록 함
+        }
+
+        UpdateHealthBar(); // 체력 바 업데이트
+    }
 
     private void AE_SlideDust()
     {

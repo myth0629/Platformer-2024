@@ -10,8 +10,8 @@ public class GoblinController : MonoBehaviour
 
     public float speed = 2f; // 적의 이동 속도
     public float detectionRange = 4f; // 플레이어 감지 범위
-    public float attackRange = 1f; // 공격 범위
-    public int maxHealth = 100; // 최대 체력
+    public float attackRange = 2f; // 공격 범위
+    public int maxHealth = 50; // 최대 체력
     public int damage = 10; // 공격력
 
     private int currentHealth; // 현재 체력
@@ -19,6 +19,8 @@ public class GoblinController : MonoBehaviour
     private bool isChasing; // 플레이어를 추적 중인지 여부
     private int nextMove;
     private bool isDead = false; // 적이 사망했는지 여부
+    private bool canAttack = true;
+    public float attackCooldown = 1.5f;
 
     void Start()
     {
@@ -40,7 +42,7 @@ public class GoblinController : MonoBehaviour
     {
         if (isDead) return; // 사망 상태에서는 Update를 실행하지 않음
         
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
 
         if (isChasing)
         {
@@ -54,34 +56,27 @@ public class GoblinController : MonoBehaviour
         if (Vector3.Distance(transform.position, player.position) <= detectionRange)
         {
             isChasing = true;
-            anim.SetBool("isRun", true);
         }
         else
         {
             isChasing = false;
-            anim.SetBool("isRun", true);
         }
 
         if (distanceToPlayer <= attackRange)
         {
             AttackPlayer();
-            anim.SetBool("isRun", false);
         }
     }
 
     void Patrol()
     {
         rigid.velocity = new Vector2(nextMove * speed, rigid.velocity.y);
+        anim.SetInteger("WalkSpeed", nextMove);
 
         // 이동 방향에 따라 스프라이트를 뒤집음
         if (nextMove != 0)
         {
             spriteRenderer.flipX = nextMove < 0;
-            anim.SetBool("isRun", true);
-        }
-        else
-        {
-            anim.SetBool("isRun", false);
         }
     }
 
@@ -97,30 +92,41 @@ public class GoblinController : MonoBehaviour
 
     void ChasePlayer()
     {
-        Vector3 targetPosition = new Vector3(player.position.x, transform.position.y, transform.position.z); // y축 고정
+        Vector3 targetPosition = player.position;
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
 
         // 플레이어의 위치에 따라 스프라이트 뒤집기
         spriteRenderer.flipX = player.position.x < transform.position.x;
 
         // 추적 상태 애니메이션 설정
-        anim.SetBool("isRun", true);
+        anim.SetInteger("WalkSpeed", 1);
     }
 
-    void AttackPlayer()
+    public void AttackPlayer()
     {
-        // 공격 애니메이션 트리거
-        anim.SetTrigger("isAttack");
+        if(canAttack && Vector2.Distance(transform.position, player.position) <= attackRange)
+        {
+            canAttack = false;
 
-        // 공격 로직 (여기서는 간단히 로그로 대체)
-        Debug.Log("Player takes " + damage + " damage.");
+            anim.SetTrigger("isAttack");
+
+            player.GetComponent<HeroKnight>().TakeDamage(damage);
+
+            Invoke("ResetAttack", attackCooldown);
+        }
+    }
+
+    void ResetAttack()
+    {
+        canAttack = true;
     }
 
     public void TakeDamage(int damage)
     {
         if (isDead) return; // 이미 사망한 경우 추가 데미지 처리하지 않음
-
+        
         currentHealth -= damage;
+        Debug.Log("고블린 hp : " + currentHealth);
         anim.SetTrigger("Hurt");
 
         if (currentHealth <= 0)
@@ -132,9 +138,9 @@ public class GoblinController : MonoBehaviour
     void Die()
     {
         isDead = true;
-        anim.SetTrigger("isDeath");
+
+        anim.SetBool("isDeath", true);
         rigid.velocity = Vector2.zero; // 죽을 때 이동 멈춤
-        GetComponent<Collider2D>().enabled = false; // 콜라이더 비활성화
         this.enabled = false; // 스크립트 비활성화
     }
 }
