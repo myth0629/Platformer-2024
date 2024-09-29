@@ -86,7 +86,8 @@ public class HeroKnight : MonoBehaviour
 
     private void CheckGroundStatus()
     {
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
+        Vector2 boxSize = new Vector2(1f, 1f);
+        RaycastHit2D hit = Physics2D.BoxCast(transform.position, boxSize, 0f, Vector2.down, groundCheckDistance, groundLayer);
 
         bool newGroundedState = hit.collider != null;
 
