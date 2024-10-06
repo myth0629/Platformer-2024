@@ -8,6 +8,8 @@ public class GoblinController : MonoBehaviour
     Animator anim;
     SpriteRenderer spriteRenderer;
 
+    private bool isActive = false; // 고블린이 활성화되었는지 여부
+
     public float speed = 2f; // 적의 이동 속도
     public float detectionRange = 4f; // 플레이어 감지 범위
     public float attackRange = 2f; // 공격 범위
@@ -36,10 +38,14 @@ public class GoblinController : MonoBehaviour
 
         // 초기 Think 호출
         Think();
+        
+        // 초기 상태에서 고블린을 비활성화
+        //gameObject.SetActive(false);
     }
 
     void Update()
     {
+        if (!isActive || isDead) return; // 고블린이 활성화되지 않았거나 사망한 경우
         if (isDead) return; // 사망 상태에서는 Update를 실행하지 않음
         
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
@@ -78,6 +84,11 @@ public class GoblinController : MonoBehaviour
         {
             spriteRenderer.flipX = nextMove < 0;
         }
+    }
+    public void ActivateGoblin()
+    {
+        isActive = true; // 고블린 활성화
+        gameObject.SetActive(true); // 게임 오브젝트 활성화
     }
 
     void Think()

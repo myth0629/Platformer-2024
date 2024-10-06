@@ -1,4 +1,3 @@
-// UIManager.cs
 using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_EDITOR
@@ -7,68 +6,105 @@ using UnityEditor;
 
 public class UIManager : MonoBehaviour
 {
-    public Slider healthBar; // 체력바 슬라이더
-    public Text healthText;  // 체력 텍스트
+    public Image[] hearts;  // 하트 이미지 배열
+    public Transform playerInitialPosition; // 캐릭터 초기 위치
+    public Transform[] monsterInitialPositions; // 몬스터 초기 위치 배열
+    public GameObject player; // 캐릭터 오브젝트
+    public GameObject[] monsters; // 몬스터 오브젝트 배열
+
+    private int coinCount = 500; // 코인 카운트 초기화
+
+
+    private bool isGoblinActive = false; // 고블린이 활성화되었는지 여부
+
+    public int maxHealth = 100;
+    private int currentHealth;
+
+    public Text healthText;
+    public GameObject playerCanvas;
+
+    // 메인 메뉴, 튜토리얼, 설정, 엔딩 관련 캔버스
     public GameObject mainCanvas;
     public GameObject tutorialCanvas;
     public GameObject settingCanvas;
     public GameObject endCanvas;
     public GameObject clearCanvas;
-    public GameObject playerCanvas; // 플레이어 체력바 캔버스 추가
+
+    public GameObject mainSettingCanvas; 
+    public GameObject shopCanvas;  // 상점 캔버스
 
     public Camera mainCamera;
     public Camera camera1;
 
-    public Button againButton;
-    public Button finishButton;
+    public GameObject HeroKnight;
+    public GameObject enemyPrefab;
+    public Transform[] enemySpawnPoints;
 
-    public GameObject HeroKnight;  // 플레이어 오브젝트
-    public GameObject enemyPrefab;  // 적의 프리팹
-    public Transform[] enemySpawnPoints;  // 적이 스폰될 수 있는 위치들
+    public Text elapsedTimeText;
+    private float elapsedTime;
+    private float startTime;
 
-    private bool isSettingVisible = false;
     private bool isTutorialActive = false;
     private GameObject currentEnemy;
 
-    public Text elapsedTimeText; // 경과 시간을 표시할 텍스트 UI 요소
-
-    private float startTime; // 게임 시작 시점
-    private float elapsedTime; // 경과 시간
+    public Text coinText; // 코인 텍스트 UI 요소
+    public int coinAmount = 0; // 코인 변수
 
     void Start()
-    {
-        // 초기화 코드
+    { 
+        currentHealth = maxHealth;  // 초기 체력 설정
+        UpdateHearts();  // 하트 UI 업데이트
         ShowMainCanvas();
-        settingCanvas.SetActive(false);
-        HeroKnight.SetActive(false);
-        playerCanvas.SetActive(false);
-        enemyPrefab.SetActive(false);
-        elapsedTime = 0f;
-
-        // 게임 시작 시 커서 보이도록 설정
+        UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
+
+        UpdateHealthText();
+
+    }
+    // 코인 추가 메서드
+    public void AddCoin(int amount)
+    {
+        coinAmount += amount;
+        UpdateCoinText();
+    }
+    // 코인 텍스트 업데이트 메서드
+    public void UpdateCoinText()
+    {
+        coinText.text = "코인: " + coinAmount.ToString();
     }
 
     void Update()
     {
         if (isTutorialActive)
         {
-            // ESC 키 입력으로 SettingCanvas 토글 (Camera1이 활성화된 경우에만)
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 ToggleSettingCanvas();
             }
 
-            // 경과 시간 업데이트
-            elapsedTime = Time.time - startTime;
-            UpdateElapsedTimeText();
+            // playerCanvas가 활성화 되었을 때만 시간 업데이트
+            if (playerCanvas.activeSelf)
+            {
+                elapsedTime = Time.time - startTime;
+                UpdateElapsedTimeText();
+            }
+            else
+            {
+                // playerCanvas가 비활성화되면 elapsedTime 초기화
+                elapsedTime = 0f; // 시간 초기화
+            }
         }
+    }
+    public void DeductCoins(int amount)
+    {
+        coinCount -= amount;
+        if (coinCount < 0) coinCount = 0; // 코인 수가 0보다 작아지지 않도록
+        Debug.Log("남은 코인: " + coinCount);
     }
 
     public void OnEndButtonClicked()
     {
-        // 애플리케이션 종료
 #if UNITY_EDITOR
         EditorApplication.isPlaying = false;
 #else
@@ -78,66 +114,89 @@ public class UIManager : MonoBehaviour
 
     public void OnStartButtonClicked()
     {
-        // MainCanvas 끄고 TutorialCanvas 켜기
         ShowTutorialCanvas();
-        startTime = Time.time; // 게임 시작 시점 기록
     }
 
     public void OnNextButtonClicked()
     {
-        // Camera1으로 전환하고 SettingCanvas 제어 가능
         HideAllCanvases();
         SwitchToCamera1();
         isTutorialActive = true;
-        isSettingVisible = false;
-
-        // Player와 playerCanvas 활성화
         HeroKnight.SetActive(true);
         playerCanvas.SetActive(true);
-
-        // Enemy 랜덤 스폰 및 활성화
         SpawnEnemy();
-        // 튜토리얼 시작 시 커서를 보이게 설정
+        isGoblinActive = true; // 고블린 활성화
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-    }   
+        startTime = Time.time; // 현재 시간을 startTime으로 설정
+    }
+    
+    public void TakeDamage(int damage)
+    {
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+        UpdateHearts();
+        UpdateHealthText();  // 체력 텍스트 업데이트
+    }
+
+    public void UpdateHearts()
+    {
+        int heartIndex = Mathf.CeilToInt(currentHealth / 20f); // 체력 20마다 하트 1개씩
+        
+        for (int i = 0; i < hearts.Length; i++)
+        {
+            hearts[i].enabled = (i < heartIndex);  // 체력이 남아 있으면 하트 보이고, 없으면 숨기기
+        }
+    }
+    private void UpdateHealthText()
+    {
+        if (healthText != null)
+        {
+            healthText.text =  currentHealth.ToString() + "/100";
+        }
+        else
+        {
+            Debug.LogWarning("healthText is not assigned.");
+        }
+    }
+
+    public void OnMonsterAttack()
+    {
+        TakeDamage(20);  // 몬스터 공격 시 체력 20 감소
+    }
+
     public void OnReturnButtonClicked()
     {
-        // MainCanvas로 돌아가기
         ShowMainCanvas();
+        // 코인 초기화
+        coinAmount = 0;
+        UpdateCoinText(); // 텍스트 업데이트
     }
 
     public void OnBackButtonClicked()
     {
-        // SettingCanvas 닫기
         HideSettingCanvas();
-    }
-
-    public void OnAgainButtonClicked()
-    {
-        // 게임을 다시 시작: Tutorial에서 NextButton을 누른 것과 같은 동작
-        ResetGame();
-        OnNextButtonClicked();
-        startTime = Time.time; // 게임 시작 시점 기록
     }
 
     public void OnFinishButtonClicked()
     {
-        // 메인 화면으로 돌아가기
         ResetGame();
         ShowMainCanvas();
     }
 
-    private void ResetGame()
+    public void OnAgainButtonClicked()
     {
-        // Player 오브젝트 찾기
+        ResetGame();
+        ShowTutorialCanvas();
+    }
+
+    public void ResetGame()
+    {
         HeroKnight playerScript = HeroKnight.GetComponent<HeroKnight>();
         if (playerScript != null)
         {
-            playerScript.currentHealth = playerScript.maxHealth;  // 플레이어 체력 리셋
+            playerScript.currentHealth = playerScript.maxHealth;  
         }
-
-        // Again 버튼을 눌렀을 때 튜토리얼 상태로 돌아가기
         HideAllCanvases();
         HeroKnight.SetActive(false);
         playerCanvas.SetActive(false);
@@ -146,100 +205,112 @@ public class UIManager : MonoBehaviour
         {
             Destroy(currentEnemy);
         }
+    }
+   public void ResetGameToInitialState()
+{
+    // 캐릭터 위치 초기화
+    if (player != null)
+    {
+        player.transform.position = playerInitialPosition.position;
+        player.transform.rotation = playerInitialPosition.rotation; // 필요시 회전 초기화
 
-        // 경과 시간 초기화
-        elapsedTime = 0f;
+        // Rigidbody 초기화 (필요시)
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero; // 속도 초기화
+            rb.angularVelocity = 0; // 각속도 초기화
+        }
     }
 
-    private void UpdateElapsedTimeText()
+    // 몬스터 위치 초기화
+    for (int i = 0; i < monsters.Length; i++)
     {
-        if (elapsedTimeText != null)
+        if (monsters[i] != null)
         {
-            // 시간 포맷을 "MM:SS"로 변환
-            int minutes = Mathf.FloorToInt(elapsedTime / 60f);
-            int seconds = Mathf.FloorToInt(elapsedTime % 60f);
-            elapsedTimeText.text = $"{minutes:D2}:{seconds:D2}";
+            monsters[i].transform.position = monsterInitialPositions[i].position;
+            monsters[i].transform.rotation = monsterInitialPositions[i].rotation; // 필요시 회전 초기화
+            monsters[i].GetComponent<GoblinController>().TakeDamage(-monsters[i].GetComponent<GoblinController>().maxHealth); // 체력 초기화
+        }
+    }
+
+    // 하트 UI 초기화
+    currentHealth = maxHealth;
+    UpdateHearts();
+  // MainCanvas 활성화
+    mainCanvas.SetActive(true);
+    // 다른 모든 캔버스 비활성화
+    playerCanvas.SetActive(false);
+    clearCanvas.SetActive(false);
+}
+    
+    public void CloseShopCanvas()
+    {
+        if (shopCanvas != null)
+        {
+            shopCanvas.SetActive(false); // shopCanvas 비활성화
+        }
+        else
+        {
+            Debug.LogWarning("shopCanvas is not assigned.");
         }
     }
 
     private void ShowMainCanvas()
     {
-        mainCanvas.SetActive(true);
-        tutorialCanvas.SetActive(false);
-        settingCanvas.SetActive(false);
-        endCanvas.SetActive(false);
-        clearCanvas.SetActive(false);
-        playerCanvas.SetActive(false);
+        if (mainCanvas != null)
+            mainCanvas.SetActive(true);
+        
+        if (mainSettingCanvas != null)
+            mainSettingCanvas.SetActive(true);
+
+        if (tutorialCanvas != null)
+            tutorialCanvas.SetActive(false);
+
+        if (settingCanvas != null)
+            settingCanvas.SetActive(false);
+
+        if (endCanvas != null)
+            endCanvas.SetActive(false);
+
+        if (clearCanvas != null)
+            clearCanvas.SetActive(false);
+
+        if (playerCanvas != null)
+            playerCanvas.SetActive(false);
+
         SwitchToMainCamera();
         isTutorialActive = false;
-        // 메인 화면으로 돌아왔을 때 커서를 보이게 설정
+
+        if (mainSettingCanvas != null)
+            mainSettingCanvas.SetActive(false);
+    
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
 
     private void ShowTutorialCanvas()
     {
-        mainCanvas.SetActive(false);
-        tutorialCanvas.SetActive(true);
-        isTutorialActive = true;  // TutorialCanvas 활성화
-    }
-
-    public void ShowEndCanvas()
-    {
-        // EndCanvas를 표시하고 나머지는 비활성화
-        HideAllCanvases();
-        endCanvas.SetActive(true);
-        playerCanvas.SetActive(false); // EndCanvas가 보일 때 playerCanvas 비활성화
-
-        // Player 비활성화
-        HeroKnight.SetActive(false);
-
-        // 현재 스폰된 Enemy 비활성화
-        if (currentEnemy != null)
-        {
-            Destroy(currentEnemy);
-        }
-    }
-
-    public void ShowClearCanvas()
-    {
-        // ClearCanvas를 표시하고 나머지는 비활성화
-        HideAllCanvases();
-        clearCanvas.SetActive(true);
-        playerCanvas.SetActive(false); // ClearCanvas가 보일 때 playerCanvas 비활성화
-
-        // Player 비활성화
-        HeroKnight.SetActive(false);
-
-        // 현재 스폰된 Enemy 비활성화
-        if (currentEnemy != null)
-        {
-            Destroy(currentEnemy);
-        }
+        SetCanvasActive(false, mainCanvas, mainSettingCanvas);
+        SetCanvasActive(true, tutorialCanvas);
+        isTutorialActive = true;
     }
 
     private void HideAllCanvases()
     {
-        mainCanvas.SetActive(false);
-        tutorialCanvas.SetActive(false);
-        settingCanvas.SetActive(false);
-        endCanvas.SetActive(false);
-        clearCanvas.SetActive(false);
-        playerCanvas.SetActive(false); // 모든 캔버스를 숨길 때 playerCanvas 비활성화
+        SetCanvasActive(false, mainCanvas, tutorialCanvas, settingCanvas, endCanvas, clearCanvas, playerCanvas, mainSettingCanvas);
     }
 
     private void ToggleSettingCanvas()
     {
-        if (isTutorialActive) // Camera1이 활성화된 경우에만 설정 가능
+        if (isTutorialActive)
         {
-            isSettingVisible = !isSettingVisible;
-            settingCanvas.SetActive(isSettingVisible);
+            settingCanvas.SetActive(!settingCanvas.activeSelf);
         }
     }
 
     private void HideSettingCanvas()
     {
-        isSettingVisible = false;
         settingCanvas.SetActive(false);
     }
 
@@ -254,24 +325,49 @@ public class UIManager : MonoBehaviour
         mainCamera.enabled = false;
         camera1.enabled = true;
     }
-
+//
     private void SpawnEnemy()
     {
-        // 랜덤한 위치에서 Enemy를 스폰
         if (enemySpawnPoints.Length > 0 && enemyPrefab != null)
         {
             int randomIndex = Random.Range(0, enemySpawnPoints.Length);
             currentEnemy = Instantiate(enemyPrefab, enemySpawnPoints[randomIndex].position, Quaternion.identity);
-            currentEnemy.SetActive(true); // 스폰된 적 활성화
+            currentEnemy.SetActive(true); // 적 활성화
+
+            // 고블린의 활성화 메서드를 호출하여 동작 시작
+            currentEnemy.GetComponent<GoblinController>().ActivateGoblin();
+        }
+    }
+    public void RestoreHealth(int amount)
+    {
+        currentHealth += amount;
+        if (currentHealth > maxHealth)
+        {
+            currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
+        }
+        UpdateHealthText();  // 체력 텍스트 업데이트
+    }
+
+    private void UpdateElapsedTimeText()
+    {
+        if (elapsedTimeText != null)
+        {
+            // 시간 포맷을 "MM:SS"로 변환
+            int minutes = Mathf.FloorToInt(elapsedTime / 60f);
+            int seconds = Mathf.FloorToInt(elapsedTime % 60f);
+            elapsedTimeText.text = $"{minutes:D2}:{seconds:D2}";
+        }
+        else
+        {
+            Debug.LogWarning("elapsedTimeText is not assigned.");
         }
     }
 
-    public void UpdateHealthBar(float currentHealth, float maxHealth)
+    private void SetCanvasActive(bool isActive, params GameObject[] canvases)
     {
-        if (healthBar != null)
+        foreach (GameObject canvas in canvases)
         {
-            float healthRatio = currentHealth / maxHealth;
-            healthBar.value = Mathf.Clamp01(healthRatio);
+            canvas.SetActive(isActive);
         }
     }
 }

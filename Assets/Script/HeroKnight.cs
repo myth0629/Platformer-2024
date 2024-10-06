@@ -1,14 +1,14 @@
 ﻿using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class HeroKnight : MonoBehaviour
 {
     [SerializeField] private float speed = 4.0f;
     [SerializeField] private float jumpForce = 7.5f;
     [SerializeField] private float rollForce = 6.0f;
-    //[SerializeField] private bool noBlood = false;
     [SerializeField] private GameObject slideDustPrefab;
+
+    private UIManager uiManager;
 
     private Animator animator;
     private Rigidbody2D rb;
@@ -22,22 +22,20 @@ public class HeroKnight : MonoBehaviour
     private bool isGrounded = false;
     private bool isRolling = false;
     private bool isChargingJump = false;
-    
+
     private int facingDirection = 1;
     private int currentAttack = 0;
-    
+
     private float timeSinceLastAttack = 0.0f;
     private float idleDelay = 0.0f;
     private float rollDuration = 8.0f / 14.0f;
     private float rollTime;
-    
+
     private float jumpTimeLimit = 3.0f;
     private float jumpChargeTime = 1.0f;
-    
-    public float currentHealth;
-    public float maxHealth;
 
-    public Slider healthBarSlider;
+    public float currentHealth;
+    public float maxHealth = 100;
     public float attackRange = 1.5f;
     public int attackDamage = 10;
     public LayerMask enemyLayer;
@@ -45,14 +43,14 @@ public class HeroKnight : MonoBehaviour
     public LayerMask groundLayer;
     public float groundCheckDistance = 0.1f;
 
-
     private void Start()
     {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         
         InitializeSensors();
-        SetHp(100f); // 예시: 최대 체력을 100으로 설정
+        currentHealth = maxHealth;  // 최대 체력 설정
+        uiManager = FindObjectOfType<UIManager>();
     }
 
     private void InitializeSensors()
@@ -69,7 +67,29 @@ public class HeroKnight : MonoBehaviour
         UpdateTimers();
         CheckGroundStatus();
         HandleInput();
-        //UpdateAnimatorState();
+        timeSinceLastAttack += Time.deltaTime;
+    }
+
+    public void RestoreHealth(int amount)
+    {
+        currentHealth += amount;
+        if (currentHealth > maxHealth)
+        {
+            currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
+        }
+        Debug.Log("현재 체력: " + currentHealth);
+
+        // UIManager의 RestoreHealth 호출
+        if (uiManager != null)
+        {
+            uiManager.RestoreHealth(amount);
+        }
+    }
+
+    public void SetHp(float amount)
+    {
+        maxHealth = amount;
+        currentHealth = maxHealth;
     }
 
     private void UpdateTimers()
@@ -97,7 +117,6 @@ public class HeroKnight : MonoBehaviour
             animator.SetBool("Grounded", isGrounded);
         }
     }
-
     private void HandleInput()
     {
         float inputX = Input.GetAxis("Horizontal");
@@ -106,23 +125,24 @@ public class HeroKnight : MonoBehaviour
     }
 
     private void HandleMovement(float inputX)
+{
+    if (inputX > 0)
     {
-        if (inputX > 0)
-        {
-            GetComponent<SpriteRenderer>().flipX = false;
-            facingDirection = 1;
-        }
-        else if (inputX < 0)
-        {
-            GetComponent<SpriteRenderer>().flipX = true;
-            facingDirection = -1;
-        }
-
-        if (!isRolling && !isChargingJump)
-            rb.velocity = new Vector2(inputX * speed, rb.velocity.y);
-
-        animator.SetFloat("AirSpeedY", rb.velocity.y);
+        GetComponent<SpriteRenderer>().flipX = false; // 오른쪽으로 이동할 때 스프라이트를 뒤집지 않음
+        facingDirection = 1; // 현재 방향 설정
     }
+    else if (inputX < 0)
+    {
+        GetComponent<SpriteRenderer>().flipX = true; // 왼쪽으로 이동할 때 스프라이트를 뒤집음
+        facingDirection = -1; // 현재 방향 설정
+    }
+
+    // 롤링 중이 아니고 점프를 차지하고 있지 않을 때만 이동
+    if (!isRolling && !isChargingJump)
+        rb.velocity = new Vector2(inputX * speed, rb.velocity.y); // Rigidbody2D를 사용하여 수평 속도 설정
+
+    animator.SetFloat("AirSpeedY", rb.velocity.y); // Y축 속도를 애니메이터에 전달
+}
 
     private void HandleActions(float inputX)
     {
@@ -161,7 +181,6 @@ public class HeroKnight : MonoBehaviour
             SetIdleState();
         }
     }
-
     private void PerformAttack()
     {
         currentAttack = (currentAttack % 3) + 1;
@@ -218,27 +237,16 @@ public class HeroKnight : MonoBehaviour
         if (idleDelay < 0)
             animator.SetInteger("AnimState", 0);
     }
-
-    public void SetHp(float amount)
-    {
-        maxHealth = amount;
-        currentHealth = maxHealth;
-    }
-
-    public void UpdateHealthBar()
-    {
-        if (healthBarSlider != null)
-            healthBarSlider.value = currentHealth / maxHealth;
-    }
-
+/// 
     public void TakeDamage(float damage)
     {
-        if (isInvincible || maxHealth == 0 || currentHealth <= 0)
+        if (currentHealth <= 0)
             return;
 
         currentHealth -= damage;
-        animator.SetTrigger("Hurt");
-        UpdateHealthBar();
+        if (currentHealth < 0)
+            currentHealth = 0;
+
         Debug.Log("플레이어 hp : " + currentHealth);
 
         if (currentHealth <= 0)
@@ -265,18 +273,6 @@ public class HeroKnight : MonoBehaviour
         GetComponent<HeroKnight>().enabled = false; // 조작 정지
         rb.velocity = Vector2.zero; // 이동중이라면 정지
         rb.isKinematic = true; // 물리 작용 비활성화
-
-    }
-
-    public void RestoreHealth(float amount)
-    {
-        currentHealth += amount;
-        if (currentHealth > maxHealth)
-        {
-            currentHealth = maxHealth; // 최대 체력을 초과하지 않도록 함
-        }
-
-        UpdateHealthBar(); // 체력 바 업데이트
     }
 
     private void AE_SlideDust()
