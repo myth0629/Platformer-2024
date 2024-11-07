@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEngine.SceneManagement;
 #endif
 
 public class UIManager : MonoBehaviour
@@ -58,9 +59,7 @@ public class UIManager : MonoBehaviour
         UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-
         UpdateHealthText();
-
     }
     // 코인 추가 메서드
     public void AddCoin(int amount)
@@ -121,6 +120,7 @@ public class UIManager : MonoBehaviour
     {
         HideAllCanvases();
         SwitchToCamera1();
+        LoadGameScene();
         isTutorialActive = true;
         HeroKnight.SetActive(true);
         playerCanvas.SetActive(true);
@@ -129,6 +129,11 @@ public class UIManager : MonoBehaviour
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
         startTime = Time.time; // 현재 시간을 startTime으로 설정
+    }
+
+    public void LoadGameScene()
+    {
+        SceneManager.LoadScene("GameScene");
     }
     
     public void TakeDamage(int damage)
@@ -206,43 +211,43 @@ public class UIManager : MonoBehaviour
             Destroy(currentEnemy);
         }
     }
-   public void ResetGameToInitialState()
-{
-    // 캐릭터 위치 초기화
-    if (player != null)
+    public void ResetGameToInitialState()
     {
-        player.transform.position = playerInitialPosition.position;
-        player.transform.rotation = playerInitialPosition.rotation; // 필요시 회전 초기화
-
-        // Rigidbody 초기화 (필요시)
-        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
-        if (rb != null)
+        // 캐릭터 위치 초기화
+        if (player != null)
         {
-            rb.velocity = Vector2.zero; // 속도 초기화
-            rb.angularVelocity = 0; // 각속도 초기화
-        }
-    }
+            player.transform.position = playerInitialPosition.position;
+            player.transform.rotation = playerInitialPosition.rotation; // 필요시 회전 초기화
 
-    // 몬스터 위치 초기화
-    for (int i = 0; i < monsters.Length; i++)
-    {
-        if (monsters[i] != null)
+            // Rigidbody 초기화 (필요시)
+            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.velocity = Vector2.zero; // 속도 초기화
+                rb.angularVelocity = 0; // 각속도 초기화
+            }
+        }
+
+        // 몬스터 위치 초기화
+        for (int i = 0; i < monsters.Length; i++)
         {
-            monsters[i].transform.position = monsterInitialPositions[i].position;
-            monsters[i].transform.rotation = monsterInitialPositions[i].rotation; // 필요시 회전 초기화
-            monsters[i].GetComponent<GoblinController>().TakeDamage(-monsters[i].GetComponent<GoblinController>().maxHealth); // 체력 초기화
+            if (monsters[i] != null)
+            {
+                monsters[i].transform.position = monsterInitialPositions[i].position;
+                monsters[i].transform.rotation = monsterInitialPositions[i].rotation; // 필요시 회전 초기화
+                monsters[i].GetComponent<GoblinController>().TakeDamage(-monsters[i].GetComponent<GoblinController>().maxHealth); // 체력 초기화
+            }
         }
-    }
 
-    // 하트 UI 초기화
-    currentHealth = maxHealth;
-    UpdateHearts();
-  // MainCanvas 활성화
-    mainCanvas.SetActive(true);
-    // 다른 모든 캔버스 비활성화
-    playerCanvas.SetActive(false);
-    clearCanvas.SetActive(false);
-}
+        // 하트 UI 초기화
+        currentHealth = maxHealth;
+        UpdateHearts();
+        // MainCanvas 활성화
+        mainCanvas.SetActive(true);
+        // 다른 모든 캔버스 비활성화
+        playerCanvas.SetActive(false);
+        clearCanvas.SetActive(false);
+    }
     
     public void CloseShopCanvas()
     {
