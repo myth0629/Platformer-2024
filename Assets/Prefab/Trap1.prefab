@@ -100,6 +100,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 8
-  lifetime: 5
+  lifetime: 4
   damageAmount: 10
-  spawnInterval: 3

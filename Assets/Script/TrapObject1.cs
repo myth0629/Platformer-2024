@@ -4,7 +4,7 @@ using System.Collections;
 public class DamageObject : MonoBehaviour
 {
     public float speed = 5f;  // 오브젝트의 이동 속도
-    public float lifetime = 5f;  // 오브젝트가 존재하는 시간 (초)
+    public float lifetime = 3f;  // 오브젝트가 존재하는 시간 (초)
     public float damageAmount = 10f;  // 데미지 양
 
     private float distanceTraveled = 0f;
