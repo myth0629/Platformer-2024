@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-
+using UnityEngine.SceneManagement;
 public class ButtonManager : MonoBehaviour
 {
     public UIManager uiManager; // UIManager를 참조하기 위한 변수
@@ -10,11 +10,11 @@ public class ButtonManager : MonoBehaviour
     public Button closeShopBtn; // 상점 닫기 버튼 추가
     public Button returnBtn; // 게임 초기화 버튼 추가
     
-    // MainSettingCanvas 버튼
-    public Button button1; 
-    public Button button2;
-    public Button button3; 
-    public Button button4;
+    // // MainSettingCanvas 버튼
+    // public Button button1; 
+    // public Button button2;
+    // public Button button3; 
+    // public Button button4;
 
     private HeroKnight player; // 플레이어 스크립트 참조 추가
 
@@ -29,14 +29,14 @@ public class ButtonManager : MonoBehaviour
         closeShopBtn.onClick.AddListener(OnCloseShopButtonClicked);
         returnBtn.onClick.AddListener(OnReturnButtonClicked); // returnBtn 클릭 이벤트 추가
         
-        // MainSettingCanvas 버튼 클릭 이벤트 추가
-        button1.onClick.AddListener(OnButton1Clicked);
-        button2.onClick.AddListener(OnButton2Clicked);
-        button3.onClick.AddListener(OnButton3Clicked);
-        button4.onClick.AddListener(OnButton4Clicked);
+        // // MainSettingCanvas 버튼 클릭 이벤트 추가
+        // button1.onClick.AddListener(OnButton1Clicked);
+        // button2.onClick.AddListener(OnButton2Clicked);
+        // button3.onClick.AddListener(OnButton3Clicked);
+        // button4.onClick.AddListener(OnButton4Clicked);
 
-        // 버튼 2, 3, 4를 비활성화
-        SetButtonsActive(false, button2, button3, button4);
+        // // 버튼 2, 3, 4를 비활성화
+        // SetButtonsActive(false, button2, button3, button4);
         
         // returnBtn 초기화 (게임 처음 시작했을 때처럼)
         ResetReturnButton();
@@ -82,28 +82,31 @@ public class ButtonManager : MonoBehaviour
 }
     private void OnCloseShopButtonClicked()
     {
-        Debug.Log("상점 닫기 버튼 클릭됨!");
+
         uiManager.CloseShopCanvas(); // UIManager의 CloseShopCanvas 메서드 호출
     }
     
-    private void OnButton1Clicked()
+    // private void OnButton1Clicked()
+    // {
+    //     SetButtonsActive(true, button2, button3, button4);
+    // }
+
+    // private void OnButton2Clicked() { }
+
+    // private void OnButton3Clicked() { }
+
+    // private void OnButton4Clicked()
+    // {
+    //     SetButtonsActive(false, button2, button3, button4);
+    // }
+    public void LoadMainScene()
     {
-        SetButtonsActive(true, button2, button3, button4);
+        SceneManager.LoadScene("MainMenu");
     }
-
-    private void OnButton2Clicked() { }
-
-    private void OnButton3Clicked() { }
-
-    private void OnButton4Clicked()
-    {
-        SetButtonsActive(false, button2, button3, button4);
-    }
-    
     private void OnReturnButtonClicked() // 게임 초기화 메서드
     {
-        Debug.Log("게임 초기화 버튼 클릭됨!");
-        uiManager.ResetGameToInitialState(); // UIManager의 ResetGameToInitialState 메서드 호출
+
+        LoadMainScene();
     }
 
     private void SetButtonsActive(bool isActive, params Button[] buttons)
@@ -113,4 +116,5 @@ public class ButtonManager : MonoBehaviour
             button.gameObject.SetActive(isActive);
         }
     }
-}
+
+ }

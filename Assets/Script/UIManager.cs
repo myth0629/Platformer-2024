@@ -31,7 +31,7 @@ public class UIManager : MonoBehaviour
     public GameObject endCanvas;
     public GameObject clearCanvas;
 
-    public GameObject mainSettingCanvas; 
+    // public GameObject mainSettingCanvas; 
     public GameObject shopCanvas;  // 상점 캔버스
 
     public Camera mainCamera;
@@ -41,9 +41,7 @@ public class UIManager : MonoBehaviour
     public GameObject enemyPrefab;
     public Transform[] enemySpawnPoints;
 
-    public Text elapsedTimeText;
-    private float elapsedTime;
-    private float startTime;
+
 
     private bool isTutorialActive = false;
     private GameObject currentEnemy;
@@ -53,13 +51,15 @@ public class UIManager : MonoBehaviour
 
     void Start()
     { 
+        settingCanvas.SetActive(false);
         currentHealth = maxHealth;  // 초기 체력 설정
         UpdateHearts();  // 하트 UI 업데이트
-        ShowMainCanvas();
+        UpdateHealthText();
+        // ShowMainCanvas();
         UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-        UpdateHealthText();
+        
     }
     // 코인 추가 메서드
     public void AddCoin(int amount)
@@ -74,28 +74,13 @@ public class UIManager : MonoBehaviour
     }
 
     void Update()
+{
+    if (Input.GetKeyDown(KeyCode.Escape))
     {
-        if (isTutorialActive)
-        {
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                ToggleSettingCanvas();
-            }
-
-            // playerCanvas가 활성화 되었을 때만 시간 업데이트
-            if (playerCanvas.activeSelf)
-            {
-                elapsedTime = Time.time - startTime;
-                UpdateElapsedTimeText();
-            }
-            else
-            {
-                // playerCanvas가 비활성화되면 elapsedTime 초기화
-                elapsedTime = 0f; // 시간 초기화
-            }
-        }
+        settingCanvas.SetActive(!settingCanvas.activeSelf);
     }
-    public void DeductCoins(int amount)
+}
+        public void DeductCoins(int amount)
     {
         coinCount -= amount;
         if (coinCount < 0) coinCount = 0; // 코인 수가 0보다 작아지지 않도록
@@ -118,22 +103,27 @@ public class UIManager : MonoBehaviour
 
     public void OnNextButtonClicked()
     {
-        HideAllCanvases();
+      
         SwitchToCamera1();
         LoadGameScene();
         isTutorialActive = true;
         HeroKnight.SetActive(true);
         playerCanvas.SetActive(true);
+        settingCanvas.SetActive(false);
         SpawnEnemy();
         isGoblinActive = true; // 고블린 활성화
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-        startTime = Time.time; // 현재 시간을 startTime으로 설정
+       
     }
 
     public void LoadGameScene()
     {
         SceneManager.LoadScene("GameScene");
+    }
+    public void LoadMainScene()
+    {
+        SceneManager.LoadScene("MainMenu");
     }
     
     public void TakeDamage(int damage)
@@ -145,25 +135,37 @@ public class UIManager : MonoBehaviour
     }
 
     public void UpdateHearts()
+{
+    // 체력 20마다 하트 1개씩 표시하도록 heartIndex를 설정
+    int heartIndex = Mathf.FloorToInt(currentHealth / 20f);
+    
+    for (int i = 0; i < hearts.Length; i++)
     {
-        int heartIndex = Mathf.CeilToInt(currentHealth / 20f); // 체력 20마다 하트 1개씩
+        // 하트 배열이 비어있지 않고, 할당이 되었는지 확인하는 코드 추가
+        if (hearts[i] == null)
+        {
+            Debug.LogWarning($"hearts[{i}] is not assigned.");
+            continue;
+        }
         
-        for (int i = 0; i < hearts.Length; i++)
-        {
-            hearts[i].enabled = (i < heartIndex);  // 체력이 남아 있으면 하트 보이고, 없으면 숨기기
-        }
+        // 체력에 따라 하트 활성화 여부 결정
+        hearts[i].enabled = i < heartIndex;
     }
-    private void UpdateHealthText()
+    
+    Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
+}
+
+private void UpdateHealthText()
+{
+    if (healthText != null)
     {
-        if (healthText != null)
-        {
-            healthText.text =  currentHealth.ToString() + "/100";
-        }
-        else
-        {
-            Debug.LogWarning("healthText is not assigned.");
-        }
+        healthText.text = currentHealth.ToString() + "/100";
     }
+    else
+    {
+        Debug.LogWarning("healthText is not assigned.");
+    }
+}
 
     public void OnMonsterAttack()
     {
@@ -172,10 +174,7 @@ public class UIManager : MonoBehaviour
 
     public void OnReturnButtonClicked()
     {
-        ShowMainCanvas();
-        // 코인 초기화
-        coinAmount = 0;
-        UpdateCoinText(); // 텍스트 업데이트
+        LoadGameScene();
     }
 
     public void OnBackButtonClicked()
@@ -185,70 +184,16 @@ public class UIManager : MonoBehaviour
 
     public void OnFinishButtonClicked()
     {
-        ResetGame();
-        ShowMainCanvas();
+        LoadMainScene();
+        // ShowMainCanvas();
     }
 
     public void OnAgainButtonClicked()
     {
-        ResetGame();
-        ShowTutorialCanvas();
+        LoadGameScene();
     }
 
-    public void ResetGame()
-    {
-        HeroKnight playerScript = HeroKnight.GetComponent<HeroKnight>();
-        if (playerScript != null)
-        {
-            playerScript.currentHealth = playerScript.maxHealth;  
-        }
-        HideAllCanvases();
-        HeroKnight.SetActive(false);
-        playerCanvas.SetActive(false);
 
-        if (currentEnemy != null)
-        {
-            Destroy(currentEnemy);
-        }
-    }
-    public void ResetGameToInitialState()
-    {
-        // 캐릭터 위치 초기화
-        if (player != null)
-        {
-            player.transform.position = playerInitialPosition.position;
-            player.transform.rotation = playerInitialPosition.rotation; // 필요시 회전 초기화
-
-            // Rigidbody 초기화 (필요시)
-            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
-            if (rb != null)
-            {
-                rb.velocity = Vector2.zero; // 속도 초기화
-                rb.angularVelocity = 0; // 각속도 초기화
-            }
-        }
-
-        // 몬스터 위치 초기화
-        for (int i = 0; i < monsters.Length; i++)
-        {
-            if (monsters[i] != null)
-            {
-                monsters[i].transform.position = monsterInitialPositions[i].position;
-                monsters[i].transform.rotation = monsterInitialPositions[i].rotation; // 필요시 회전 초기화
-                monsters[i].GetComponent<GoblinController>().TakeDamage(-monsters[i].GetComponent<GoblinController>().maxHealth); // 체력 초기화
-            }
-        }
-
-        // 하트 UI 초기화
-        currentHealth = maxHealth;
-        UpdateHearts();
-        // MainCanvas 활성화
-        mainCanvas.SetActive(true);
-        // 다른 모든 캔버스 비활성화
-        playerCanvas.SetActive(false);
-        clearCanvas.SetActive(false);
-    }
-    
     public void CloseShopCanvas()
     {
         if (shopCanvas != null)
@@ -261,58 +206,48 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void ShowMainCanvas()
-    {
-        if (mainCanvas != null)
-            mainCanvas.SetActive(true);
+    // private void ShowMainCanvas()
+    // {
+    //     if (mainCanvas != null)
+    //         mainCanvas.SetActive(true);
         
-        if (mainSettingCanvas != null)
-            mainSettingCanvas.SetActive(true);
+    //     // if (mainSettingCanvas != null)
+    //     //     mainSettingCanvas.SetActive(true);
 
-        if (tutorialCanvas != null)
-            tutorialCanvas.SetActive(false);
+    //     if (tutorialCanvas != null)
+    //         tutorialCanvas.SetActive(false);
 
-        if (settingCanvas != null)
-            settingCanvas.SetActive(false);
+    //     if (endCanvas != null)
+    //         endCanvas.SetActive(false);
 
-        if (endCanvas != null)
-            endCanvas.SetActive(false);
+    //     if (clearCanvas != null)
+    //         clearCanvas.SetActive(false);
 
-        if (clearCanvas != null)
-            clearCanvas.SetActive(false);
+    //     if (playerCanvas != null)
+    //         playerCanvas.SetActive(true);
 
-        if (playerCanvas != null)
-            playerCanvas.SetActive(false);
+    //     SwitchToMainCamera();
+    //     isTutorialActive = false;
 
-        SwitchToMainCamera();
-        isTutorialActive = false;
-
-        if (mainSettingCanvas != null)
-            mainSettingCanvas.SetActive(false);
+    //     // if (mainSettingCanvas != null)
+    //     //     mainSettingCanvas.SetActive(false);
     
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-    }
+    //     Cursor.visible = true;
+    //     Cursor.lockState = CursorLockMode.None;
+    // }
 
     private void ShowTutorialCanvas()
     {
-        SetCanvasActive(false, mainCanvas, mainSettingCanvas);
+        SetCanvasActive(false, mainCanvas);
         SetCanvasActive(true, tutorialCanvas);
         isTutorialActive = true;
     }
 
     private void HideAllCanvases()
     {
-        SetCanvasActive(false, mainCanvas, tutorialCanvas, settingCanvas, endCanvas, clearCanvas, playerCanvas, mainSettingCanvas);
+        SetCanvasActive(false, mainCanvas, tutorialCanvas, settingCanvas, endCanvas, clearCanvas, playerCanvas);
     }
 
-    private void ToggleSettingCanvas()
-    {
-        if (isTutorialActive)
-        {
-            settingCanvas.SetActive(!settingCanvas.activeSelf);
-        }
-    }
 
     private void HideSettingCanvas()
     {
@@ -350,23 +285,11 @@ public class UIManager : MonoBehaviour
         {
             currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
         }
+        UpdateHearts();
         UpdateHealthText();  // 체력 텍스트 업데이트
     }
 
-    private void UpdateElapsedTimeText()
-    {
-        if (elapsedTimeText != null)
-        {
-            // 시간 포맷을 "MM:SS"로 변환
-            int minutes = Mathf.FloorToInt(elapsedTime / 60f);
-            int seconds = Mathf.FloorToInt(elapsedTime % 60f);
-            elapsedTimeText.text = $"{minutes:D2}:{seconds:D2}";
-        }
-        else
-        {
-            Debug.LogWarning("elapsedTimeText is not assigned.");
-        }
-    }
+    
 
     private void SetCanvasActive(bool isActive, params GameObject[] canvases)
     {

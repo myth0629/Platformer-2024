@@ -19,12 +19,6 @@ public class DamageObject : MonoBehaviour
     {
         // 오브젝트를 오른쪽으로 이동
         transform.Translate(Vector3.right * speed * Time.deltaTime);
-
-        // 이동한 거리 계산
-        distanceTraveled += speed * Time.deltaTime;
-
-        // 디버그용: 콘솔에 이동 거리 출력
-        Debug.Log("Distance Traveled: " + distanceTraveled);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -36,7 +30,9 @@ public class DamageObject : MonoBehaviour
             if (playerHealth != null)
             {
                 playerHealth.TakeDamage(damageAmount);
+                Debug.Log("Player Hit!!");
             }
         }
+        Destroy(gameObject);
     }
 }

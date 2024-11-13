@@ -211,11 +211,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &125024984 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8600525285748637110, guid: 14962b5b51bdd4ef4a1f80334ac3ea98, type: 3}
-  m_PrefabInstance: {fileID: 1567659296}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &401721631
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -536,7 +531,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainCanvas: {fileID: 888222869}
   tutorialCanvas: {fileID: 587066414}
-  mainSettingCanvas: {fileID: 125024984}
+  mainSettingCanvas: {fileID: 0}
   mainCamera: {fileID: 23880165}
   elapsedTimeText: {fileID: 486496469}
 --- !u!1 &587066414 stripped
@@ -1073,6 +1068,7 @@ PrefabInstance:
     - {fileID: 7977875633416557528, guid: 14962b5b51bdd4ef4a1f80334ac3ea98, type: 3}
     - {fileID: 735087803338381105, guid: 14962b5b51bdd4ef4a1f80334ac3ea98, type: 3}
     - {fileID: 5918601254501018265, guid: 14962b5b51bdd4ef4a1f80334ac3ea98, type: 3}
+    - {fileID: 8600525285748637110, guid: 14962b5b51bdd4ef4a1f80334ac3ea98, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4460635877504325684, guid: 14962b5b51bdd4ef4a1f80334ac3ea98, type: 3}
