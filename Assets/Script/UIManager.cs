@@ -52,7 +52,6 @@ public class UIManager : MonoBehaviour
     void Start()
     { 
         settingCanvas.SetActive(false);
-        currentHealth = maxHealth;  // 초기 체력 설정
         UpdateHearts();  // 하트 UI 업데이트
         UpdateHealthText();
         // ShowMainCanvas();
@@ -74,13 +73,13 @@ public class UIManager : MonoBehaviour
     }
 
     void Update()
-{
-    if (Input.GetKeyDown(KeyCode.Escape))
     {
-        settingCanvas.SetActive(!settingCanvas.activeSelf);
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            settingCanvas.SetActive(!settingCanvas.activeSelf);
+        }
     }
-}
-        public void DeductCoins(int amount)
+    public void DeductCoins(int amount)
     {
         coinCount -= amount;
         if (coinCount < 0) coinCount = 0; // 코인 수가 0보다 작아지지 않도록
@@ -89,11 +88,11 @@ public class UIManager : MonoBehaviour
 
     public void OnEndButtonClicked()
     {
-#if UNITY_EDITOR
-        EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+    #if UNITY_EDITOR
+            EditorApplication.isPlaying = false;
+    #else
+            Application.Quit();
+    #endif
     }
 
     public void OnStartButtonClicked()
@@ -126,16 +125,9 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
     
-    public void TakeDamage(int damage)
-    {
-        currentHealth -= damage;
-        if (currentHealth < 0) currentHealth = 0;
-        UpdateHearts();
-        UpdateHealthText();  // 체력 텍스트 업데이트
-    }
 
     public void UpdateHearts()
-{
+    {
     // 체력 20마다 하트 1개씩 표시하도록 heartIndex를 설정
     int heartIndex = Mathf.FloorToInt(currentHealth / 20f);
     
@@ -153,23 +145,18 @@ public class UIManager : MonoBehaviour
     }
     
     Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
-}
-
-private void UpdateHealthText()
-{
-    if (healthText != null)
-    {
-        healthText.text = currentHealth.ToString() + "/100";
     }
-    else
-    {
-        Debug.LogWarning("healthText is not assigned.");
-    }
-}
 
-    public void OnMonsterAttack()
+    private void UpdateHealthText()
     {
-        TakeDamage(20);  // 몬스터 공격 시 체력 20 감소
+        if (healthText != null)
+        {
+            healthText.text = currentHealth.ToString() + "/100";
+        }
+        else
+        {
+            Debug.LogWarning("healthText is not assigned.");
+        }
     }
 
     public void OnReturnButtonClicked()

@@ -43,31 +43,30 @@ public class HeroKnight : MonoBehaviour
     public LayerMask groundLayer;
     public float groundCheckDistance = 0.1f;
 
-    private void Start()
-    {
+    void Start() {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         
         InitializeSensors();
         currentHealth = maxHealth;  // 최대 체력 설정
-        uiManager = FindObjectOfType<UIManager>();
+        uiManager = GetComponent<UIManager>();
     }
 
-    private void InitializeSensors()
+    void Update()
+    {
+        UpdateTimers();
+        CheckGroundStatus();
+        HandleInput();
+        timeSinceLastAttack += Time.deltaTime;
+    }
+
+     private void InitializeSensors()
     {
         groundSensor = transform.Find("GroundSensor").GetComponent<Sensor_HeroKnight>();
         wallSensorR1 = transform.Find("WallSensor_R1").GetComponent<Sensor_HeroKnight>();
         wallSensorR2 = transform.Find("WallSensor_R2").GetComponent<Sensor_HeroKnight>();
         wallSensorL1 = transform.Find("WallSensor_L1").GetComponent<Sensor_HeroKnight>();
         wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
-    }
-
-    private void Update()
-    {
-        UpdateTimers();
-        CheckGroundStatus();
-        HandleInput();
-        timeSinceLastAttack += Time.deltaTime;
     }
 
     public void RestoreHealth(int amount)
