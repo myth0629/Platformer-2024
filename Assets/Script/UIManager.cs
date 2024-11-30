@@ -18,8 +18,6 @@ public class UIManager : MonoBehaviour
 
     private bool isGoblinActive = false; // 고블린이 활성화되었는지 여부
 
-    public int maxHealth = 100;
-    private int currentHealth;
 
     public Text healthText;
     public GameObject playerCanvas;
@@ -48,12 +46,13 @@ public class UIManager : MonoBehaviour
 
     public Text coinText; // 코인 텍스트 UI 요소
     public int coinAmount = 0; // 코인 변수
+    private HeroKnight playerHealth;
 
     void Start()
     { 
+        playerHealth = GameObject.FindGameObjectWithTag("Player").GetComponent<HeroKnight>();
         settingCanvas.SetActive(false);
         UpdateHearts();  // 하트 UI 업데이트
-        UpdateHealthText();
         // ShowMainCanvas();
         UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
@@ -113,7 +112,6 @@ public class UIManager : MonoBehaviour
         isGoblinActive = true; // 고블린 활성화
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-       
     }
 
     public void LoadGameScene()
@@ -128,35 +126,24 @@ public class UIManager : MonoBehaviour
 
     public void UpdateHearts()
     {
-    // 체력 20마다 하트 1개씩 표시하도록 heartIndex를 설정
-    int heartIndex = Mathf.FloorToInt(currentHealth / 20f);
-    
-    for (int i = 0; i < hearts.Length; i++)
-    {
-        // 하트 배열이 비어있지 않고, 할당이 되었는지 확인하는 코드 추가
-        if (hearts[i] == null)
+        // HeroKnight의 현재 체력 가져오기
+        float currentHealth = playerHealth.currentHealth;
+        
+        // 체력 10마다 하트 1개씩 표시
+        int heartIndex = Mathf.FloorToInt(currentHealth / 10f);
+        
+        for (int i = 0; i < hearts.Length; i++)
         {
-            Debug.LogWarning($"hearts[{i}] is not assigned.");
-            continue;
+            if (hearts[i] == null)
+            {
+                Debug.LogWarning($"hearts[{i}] is not assigned.");
+                continue;
+            }
+            
+            hearts[i].enabled = i < heartIndex;
         }
         
-        // 체력에 따라 하트 활성화 여부 결정
-        hearts[i].enabled = i < heartIndex;
-    }
-    
-    Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
-    }
-
-    private void UpdateHealthText()
-    {
-        if (healthText != null)
-        {
-            healthText.text = currentHealth.ToString() + "/100";
-        }
-        else
-        {
-            Debug.LogWarning("healthText is not assigned.");
-        }
+        Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
     }
 
     public void OnReturnButtonClicked()
@@ -264,16 +251,6 @@ public class UIManager : MonoBehaviour
             // 고블린의 활성화 메서드를 호출하여 동작 시작
             currentEnemy.GetComponent<GoblinController>().ActivateGoblin();
         }
-    }
-    public void RestoreHealth(int amount)
-    {
-        currentHealth += amount;
-        if (currentHealth > maxHealth)
-        {
-            currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
-        }
-        UpdateHearts();
-        UpdateHealthText();  // 체력 텍스트 업데이트
     }
 
     

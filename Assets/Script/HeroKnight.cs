@@ -35,7 +35,7 @@ public class HeroKnight : MonoBehaviour
     private float jumpChargeTime = 1.0f;
 
     public float currentHealth;
-    public float maxHealth = 100;
+    public float maxHealth = 50;
     public float attackRange = 1.5f;
     public int attackDamage = 10;
     public LayerMask enemyLayer;
@@ -83,12 +83,6 @@ public class HeroKnight : MonoBehaviour
         {
             uiManager.RestoreHealth(amount);
         }
-    }
-
-    public void SetHp(float amount)
-    {
-        maxHealth = amount;
-        currentHealth = maxHealth;
     }
 
     private void UpdateTimers()
@@ -243,6 +237,7 @@ public class HeroKnight : MonoBehaviour
             return;
 
         currentHealth -= damage;
+        animator.SetTrigger("Hurt");
         if (currentHealth < 0)
             currentHealth = 0;
 

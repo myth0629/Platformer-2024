@@ -8,6 +8,7 @@ public class EnemyController : MonoBehaviour
     SpriteRenderer spriteRenderer;
     Rigidbody2D rigid;
     Transform player;
+    Collision2D col;
 
     public float detectionRange = 5f;  // 플레이어 추적 범위
     public float attackRange = 1.5f;   // 공격 범위
@@ -23,6 +24,7 @@ public class EnemyController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         rigid = GetComponent<Rigidbody2D>();
         player = GameObject.FindGameObjectWithTag("Player").transform;
+        col = GetCompo
 
         Invoke("Think", 5);
     }
@@ -60,18 +62,33 @@ public class EnemyController : MonoBehaviour
 
     void ChasePlayer()
     {
-        Vector2 targetPosition = new Vector2(player.position.x, rigid.position.y);
+        // 현재 위치의 y값을 유지
+        float currentY = rigid.position.y;
+        
+        // x축으로만 이동하도록 목표 위치 설정
+        Vector2 targetPosition = new Vector2(player.position.x, currentY);
         Vector2 newPosition = Vector2.MoveTowards(rigid.position, targetPosition, speed * Time.deltaTime);
+        
+        // 새로운 위치로 이동
         rigid.MovePosition(newPosition);
 
+        // 애니메이션과 스프라이트 방향 설정
         animator.SetInteger("WalkSpeed", 1);
         spriteRenderer.flipX = player.position.x < transform.position.x;
     }
 
+
     void AttackPlayer()
     {
         animator.SetTrigger("isAttack");
-        Debug.Log("Player takes " + damage + " damage.");
+        // 플레이어에게 데미지를 입힘
+        HeroKnight playerHealth = GetComponent<HeroKnight>();
+        if (playerHealth != null)  
+        {
+            playerHealth.TakeDamage(damage);
+            Debug.Log("Player takes " + damage + " damage.");
+        }
+        
     }
 
     void Think()
