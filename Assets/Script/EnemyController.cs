@@ -2,125 +2,221 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyController : MonoBehaviour
+public class MonsterController : MonoBehaviour
 {
-    Animator animator;
-    SpriteRenderer spriteRenderer;
-    Rigidbody2D rigid;
-    Transform player;
-    Collision2D col;
+    [Header("Components")]
+    private Animator animator;
+    private SpriteRenderer spriteRenderer;
+    private Rigidbody2D rigid;
+    private Transform player;
+    [SerializeField] private float maxHealth = 100f;
+    [SerializeField] private float currentHealth;
+    [SerializeField] private float knockbackForce = 5f;
+    [SerializeField] private float invincibilityDuration = 0.3f;
+    
+    private bool isInvincible = false;
+    private Material material;
+    private Color originalColor;
 
-    public float detectionRange = 5f;  // 플레이어 추적 범위
-    public float attackRange = 1.5f;   // 공격 범위
-    public int damage = 10;            // 공격력
-    public float speed = 2f;           // 이동 속도
+    [Header("Stats")]
+    [SerializeField] private float speed = 5f;
+    [SerializeField] private float detectionRange = 5f;
+    [SerializeField] private float attackRange = 1.5f;
+    [SerializeField] private float damage = 10f;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float attackCooldown = 1f; // 공격 쿨타임 (초)
+    private float lastAttackTime = 0f; // 마지막 공격 시간
 
-    int nextMove;
-    public bool isTracing;
+    private bool isTracing = false;
+    private int nextMove = 0;
+    private float moveThreshold = 0.1f; // 움직임 감지 임계값
 
-    void Start()
+    private void Start()
+    {
+        InitializeComponents();
+        Invoke("Think", 5);
+    }
+
+    private void InitializeComponents()
     {
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         rigid = GetComponent<Rigidbody2D>();
         player = GameObject.FindGameObjectWithTag("Player").transform;
-        col = GetCompo
-
-        Invoke("Think", 5);
     }
 
-    void Update()
+    private void Update()
     {
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        UpdateBehavior(distanceToPlayer);
+        UpdateAnimationState();
+    }
 
+    private void UpdateBehavior(float distanceToPlayer)
+    {
         if (distanceToPlayer <= attackRange)
         {
-            AttackPlayer();  // 공격 범위 내에서 공격
+            isTracing = false;
+            StopMovement();
+            AttackPlayer();
         }
         else if (distanceToPlayer <= detectionRange)
         {
             isTracing = true;
-            ChasePlayer();   // 추적 범위 내에서 추적
+            ChasePlayer();
         }
         else
         {
             isTracing = false;
-            Patrol();        // 범위를 벗어나면 정찰 모드
-        }
-
-        if (!isTracing)
-        {
-            CheckGroundAhead(); // 추적 중이 아닐 때만 이동 경로 체크
+            Patrol();
+            if (!isTracing) CheckGroundAhead();
         }
     }
 
-    void Patrol()
+    private void UpdateAnimationState()
+    {
+        float currentSpeed = Mathf.Abs(rigid.velocity.x);
+        bool isMoving = currentSpeed > moveThreshold;
+        
+        // 이동 애니메이션 설정
+        animator.SetInteger("WalkSpeed", isMoving ? 1 : 0);
+        
+        // 이동 중일 때만 방향 전환
+        if (isMoving)
+        {
+            spriteRenderer.flipX = rigid.velocity.x < 0;
+        }
+    }
+
+    private void StopMovement()
+    {
+        rigid.velocity = new Vector2(0, rigid.velocity.y);
+    }
+
+    private void Patrol()
     {
         rigid.velocity = new Vector2(nextMove * speed, rigid.velocity.y);
-        animator.SetInteger("WalkSpeed", Mathf.Abs(nextMove));
     }
 
-    void ChasePlayer()
+    private void ChasePlayer()
     {
-        // 현재 위치의 y값을 유지
-        float currentY = rigid.position.y;
-        
-        // x축으로만 이동하도록 목표 위치 설정
-        Vector2 targetPosition = new Vector2(player.position.x, currentY);
-        Vector2 newPosition = Vector2.MoveTowards(rigid.position, targetPosition, speed * Time.deltaTime);
-        
-        // 새로운 위치로 이동
-        rigid.MovePosition(newPosition);
-
-        // 애니메이션과 스프라이트 방향 설정
-        animator.SetInteger("WalkSpeed", 1);
-        spriteRenderer.flipX = player.position.x < transform.position.x;
+        if (Physics2D.Raycast(transform.position, Vector2.down, 0.1f, groundLayer))
+        {
+            float direction = Mathf.Sign(player.position.x - transform.position.x);
+            rigid.velocity = new Vector2(direction * speed, rigid.velocity.y);
+        }
+        else
+        {
+            StopMovement();
+        }
     }
 
-
-    void AttackPlayer()
+    private void AttackPlayer()
+{
+    // 현재 시간과 마지막 공격 시간을 비교하여 쿨타임 체크
+    if (Time.time - lastAttackTime >= attackCooldown)
     {
+        // 공격 애니메이션 실행
         animator.SetTrigger("isAttack");
-        // 플레이어에게 데미지를 입힘
-        HeroKnight playerHealth = GetComponent<HeroKnight>();
-        if (playerHealth != null)  
+        
+        // 플레이어에게 데미지 적용
+        HeroKnight playerHealth = player.GetComponent<HeroKnight>();
+        if (playerHealth != null)
         {
             playerHealth.TakeDamage(damage);
-            Debug.Log("Player takes " + damage + " damage.");
         }
         
+        // 마지막 공격 시간 업데이트
+        lastAttackTime = Time.time;
     }
+}
 
-    void Think()
+    private void Think()
     {
         if (!isTracing)
         {
             nextMove = Random.Range(-1, 2);
-            animator.SetInteger("WalkSpeed", Mathf.Abs(nextMove));
-            spriteRenderer.flipX = nextMove < 0;
-
             Invoke("Think", Random.Range(2f, 5f));
         }
     }
 
-    void Turn()
+    private void Turn()
     {
         nextMove *= -1;
-        spriteRenderer.flipX = nextMove < 0;
-
         CancelInvoke();
         Invoke("Think", 2);
     }
 
-    void CheckGroundAhead()
+    private void CheckGroundAhead()
     {
         Vector2 frontVec = new Vector2(rigid.position.x + nextMove * 0.5f, rigid.position.y);
-        Debug.DrawRay(rigid.position, Vector3.down, Color.green);
+        Debug.DrawRay(frontVec, Vector3.down, Color.green);
         RaycastHit2D rayHit = Physics2D.Raycast(frontVec, Vector3.down, 1, LayerMask.GetMask("Platform"));
 
         if (rayHit.collider == null)
         {
             Turn();
         }
+    }
+
+    public void TakeDamage(float damage)
+    {
+        if (isInvincible) return;
+
+        currentHealth -= damage;
+        
+        // 피격 효과
+        StartCoroutine(HitEffect());
+        
+        // 넉백 적용
+        ApplyKnockback();
+
+        // 체력 확인
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private IEnumerator HitEffect()
+    {
+        isInvincible = true;
+        
+        // 피격 색상 변경
+        material.color = Color.red;
+        
+        // 피격 애니메이션
+        animator.SetTrigger("Hurt");
+        
+        yield return new WaitForSeconds(invincibilityDuration);
+        
+        // 원래 색상으로 복구
+        material.color = originalColor;
+        isInvincible = false;
+    }
+
+    private void ApplyKnockback()
+    {
+        // 플레이어 위치 기준으로 넉백 방향 결정
+        float direction = transform.position.x < player.position.x ? -1 : 1;
+        
+        // 넉백 힘 적용
+        rigid.velocity = new Vector2(direction * knockbackForce, rigid.velocity.y);
+    }
+
+    private void Die()
+    {
+        // 사망 애니메이션
+        animator.SetBool("isDeath", true);
+        
+        // 물리 효과 비활성화
+        rigid.velocity = Vector2.zero;
+        GetComponent<Collider2D>().enabled = false;
+        
+        // 모든 행동 중지
+        this.enabled = false;
+        
+        // 사망 처리 (선택적)
+        Destroy(gameObject, 1f); // 1초 후 오브젝트 제거
     }
 }

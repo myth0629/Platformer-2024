@@ -7,7 +7,10 @@ using UnityEngine.SceneManagement;
 
 public class UIManager : MonoBehaviour
 {
-    public Image[] hearts;  // 하트 이미지 배열
+    [Header("Heart Settings")]
+    public Image[] hearts;        // 하트 이미지 배열
+    public Sprite fullHeart;      // 가득 찬 하트 스프라이트
+    public Sprite emptyHeart;     // 빈 하트 스프라이트
     public Transform playerInitialPosition; // 캐릭터 초기 위치
     public Transform[] monsterInitialPositions; // 몬스터 초기 위치 배열
     public GameObject player; // 캐릭터 오브젝트
@@ -52,8 +55,8 @@ public class UIManager : MonoBehaviour
     { 
         playerHealth = GameObject.FindGameObjectWithTag("Player").GetComponent<HeroKnight>();
         settingCanvas.SetActive(false);
-        UpdateHearts();  // 하트 UI 업데이트
         // ShowMainCanvas();
+        UpdateHearts();
         UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
@@ -126,11 +129,8 @@ public class UIManager : MonoBehaviour
 
     public void UpdateHearts()
     {
-        // HeroKnight의 현재 체력 가져오기
-        float currentHealth = playerHealth.currentHealth;
-        
-        // 체력 10마다 하트 1개씩 표시
-        int heartIndex = Mathf.FloorToInt(currentHealth / 10f);
+        float health = playerHealth.currentHealth;
+        int heartIndex = Mathf.FloorToInt(health / 10f);
         
         for (int i = 0; i < hearts.Length; i++)
         {
@@ -139,11 +139,8 @@ public class UIManager : MonoBehaviour
                 Debug.LogWarning($"hearts[{i}] is not assigned.");
                 continue;
             }
-            
-            hearts[i].enabled = i < heartIndex;
+            hearts[i].enabled = false;
         }
-        
-        Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
     }
 
     public void OnReturnButtonClicked()
@@ -166,6 +163,8 @@ public class UIManager : MonoBehaviour
     {
         LoadGameScene();
     }
+
+
 
 
     public void CloseShopCanvas()

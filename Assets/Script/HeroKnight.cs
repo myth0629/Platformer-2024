@@ -42,6 +42,9 @@ public class HeroKnight : MonoBehaviour
     public bool isInvincible;
     public LayerMask groundLayer;
     public float groundCheckDistance = 0.1f;
+    [SerializeField] private float attackCooldown = 0.5f; // 공격 쿨타임
+    private float lastAttackTime = 0f; // 마지막 공격 시간
+    private bool canAttack = true; // 공격 가능 여부
 
     void Start() {
         animator = GetComponent<Animator>();
@@ -78,11 +81,6 @@ public class HeroKnight : MonoBehaviour
         }
         Debug.Log("현재 체력: " + currentHealth);
 
-        // UIManager의 RestoreHealth 호출
-        if (uiManager != null)
-        {
-            uiManager.RestoreHealth(amount);
-        }
     }
 
     private void UpdateTimers()
@@ -99,7 +97,7 @@ public class HeroKnight : MonoBehaviour
 
     private void CheckGroundStatus()
     {
-        Vector2 boxSize = new Vector2(1f, 1f);
+        Vector2 boxSize = new Vector2(0.5f, 0.5f);
         RaycastHit2D hit = Physics2D.BoxCast(transform.position, boxSize, 0f, Vector2.down, groundCheckDistance, groundLayer);
 
         bool newGroundedState = hit.collider != null;
@@ -176,6 +174,8 @@ public class HeroKnight : MonoBehaviour
     }
     private void PerformAttack()
     {
+        if (!canAttack) return;
+        
         currentAttack = (currentAttack % 3) + 1;
 
         if (timeSinceLastAttack > 1.0f)
@@ -183,13 +183,26 @@ public class HeroKnight : MonoBehaviour
 
         animator.SetTrigger("Attack" + currentAttack);
         timeSinceLastAttack = 0.0f;
-
+        
+        // 공격 실행
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, attackRange, enemyLayer);
-
         foreach(Collider2D enemy in hitEnemies)
         {
             enemy.GetComponent<GoblinController>().TakeDamage(attackDamage);
         }
+        
+        // 쿨타임 시작
+        StartCoroutine(AttackCooldown());
+    }
+
+    private IEnumerator AttackCooldown()
+    {
+        canAttack = false;
+        lastAttackTime = Time.time;
+        
+        yield return new WaitForSeconds(attackCooldown);
+        
+        canAttack = true;
     }
 
     private void Roll()
@@ -230,7 +243,7 @@ public class HeroKnight : MonoBehaviour
         if (idleDelay < 0)
             animator.SetInteger("AnimState", 0);
     }
-/// 
+
     public void TakeDamage(float damage)
     {
         if (currentHealth <= 0)
