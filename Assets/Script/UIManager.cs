@@ -139,7 +139,7 @@ public class UIManager : MonoBehaviour
                 Debug.LogWarning($"hearts[{i}] is not assigned.");
                 continue;
             }
-            hearts[i].enabled = false;
+            hearts[i].enabled = i < heartIndex;
         }
     }
 
