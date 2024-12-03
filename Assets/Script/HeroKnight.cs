@@ -11,6 +11,7 @@ public class HeroKnight : MonoBehaviour
     [SerializeField] private AudioClip attackSound;
     [SerializeField] private AudioClip damageSound;
     [SerializeField] private AudioClip walkSound;
+    [SerializeField] private AudioClip landSound;
     
     AudioSource audioSource;
     private UIManager uiManager;
@@ -56,6 +57,7 @@ public class HeroKnight : MonoBehaviour
     [SerializeField] private float attackCooldown = 0.5f; // 공격 쿨타임
     private float lastAttackTime = 0f; // 마지막 공격 시간
     private bool canAttack = true; // 공격 가능 여부
+    private bool previouslyGrounded = false;
 
     void Start() {
         animator = GetComponent<Animator>();
@@ -72,6 +74,13 @@ public class HeroKnight : MonoBehaviour
         CheckGroundStatus();
         HandleInput();
         timeSinceLastAttack += Time.deltaTime;
+            // 이전 상태가 공중에 있다가(false) 현재 땅에 닿은 경우(true)
+        if (!previouslyGrounded && isGrounded)
+        {
+            audioSource.PlayOneShot(landSound);  // 착지 소리 재생
+        }
+        
+        previouslyGrounded = isGrounded;  // 현재 상태를 저장
     }
 
      private void InitializeSensors()
@@ -83,7 +92,6 @@ public class HeroKnight : MonoBehaviour
         wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
     }
 
-<<<<<<< Updated upstream
     public void RestoreHealth(int amount)
     {
         currentHealth += amount;
@@ -94,8 +102,6 @@ public class HeroKnight : MonoBehaviour
         Debug.Log("현재 체력: " + currentHealth);
 
     }
-=======
->>>>>>> Stashed changes
 
     private void UpdateTimers()
     {
@@ -111,7 +117,7 @@ public class HeroKnight : MonoBehaviour
 
     private void CheckGroundStatus()
     {
-        Vector2 boxSize = new Vector2(0.5f, 0.5f);
+        Vector2 boxSize = new Vector2(0.8f, 0.5f);
         RaycastHit2D hit = Physics2D.BoxCast(transform.position, boxSize, 0f, Vector2.down, groundCheckDistance, groundLayer);
 
         bool newGroundedState = hit.collider != null;
@@ -316,6 +322,15 @@ public class HeroKnight : MonoBehaviour
         {
             GameObject dust = Instantiate(slideDustPrefab, spawnPosition, gameObject.transform.localRotation);
             dust.transform.localScale = new Vector3(facingDirection, 1, 1);
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    { 
+        if (other.CompareTag("Trap"))
+        {
+            TakeDamage(10);
+            Debug.Log("Player Hit!!");
         }
     }
 }

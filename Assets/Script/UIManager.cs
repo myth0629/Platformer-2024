@@ -7,10 +7,8 @@ using UnityEngine.SceneManagement;
 
 public class UIManager : MonoBehaviour
 {
-    [Header("Heart Settings")]
-    public Image[] hearts;        // 하트 이미지 배열
-    public Sprite fullHeart;      // 가득 찬 하트 스프라이트
-    public Sprite emptyHeart;     // 빈 하트 스프라이트
+    private bool gameCleared = false;
+    public Image[] hearts;  // 하트 이미지 배열
     public Transform playerInitialPosition; // 캐릭터 초기 위치
     public Transform[] monsterInitialPositions; // 몬스터 초기 위치 배열
     public GameObject player; // 캐릭터 오브젝트
@@ -21,6 +19,8 @@ public class UIManager : MonoBehaviour
 
     private bool isGoblinActive = false; // 고블린이 활성화되었는지 여부
 
+    public int maxHealth = 100;
+    private int currentHealth;
 
     public Text healthText;
     public GameObject playerCanvas;
@@ -41,7 +41,7 @@ public class UIManager : MonoBehaviour
     public GameObject HeroKnight;
     public GameObject enemyPrefab;
     public Transform[] enemySpawnPoints;
-
+    public ScrollingText scrollingText;
 
 
     private bool isTutorialActive = false;
@@ -49,19 +49,59 @@ public class UIManager : MonoBehaviour
 
     public Text coinText; // 코인 텍스트 UI 요소
     public int coinAmount = 0; // 코인 변수
-    private HeroKnight playerHealth;
 
     void Start()
     { 
-        playerHealth = GameObject.FindGameObjectWithTag("Player").GetComponent<HeroKnight>();
         settingCanvas.SetActive(false);
+        currentHealth = maxHealth;  // 초기 체력 설정
+        UpdateHearts();  // 하트 UI 업데이트
+        UpdateHealthText();
         // ShowMainCanvas();
-        UpdateHearts();
         UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-        
+        HideClearCanvas();
     }
+    void Update()
+{
+    if (Input.GetKeyDown(KeyCode.Escape))
+    {
+        settingCanvas.SetActive(!settingCanvas.activeSelf);
+    }
+    if (gameCleared) // 게임 클리어 상태일 때
+        {
+            ShowClearCanvas(); // 게임 클리어 화면 표시
+        }
+}
+public void ShowClearCanvas()
+{
+    if (clearCanvas != null)
+    {
+        clearCanvas.SetActive(true);
+
+        // ScrollingText 활성화 및 초기화
+        if (scrollingText != null)
+        {
+            scrollingText.gameObject.SetActive(true);
+            scrollingText.ResetPosition(); // 초기 위치로 리셋
+        }
+    }
+}
+
+public void HideClearCanvas()
+{
+    if (clearCanvas != null)
+    {
+        clearCanvas.SetActive(false);
+
+        // ScrollingText 비활성화
+        if (scrollingText != null)
+        {
+            scrollingText.gameObject.SetActive(false);
+        }
+    }
+}
+
     // 코인 추가 메서드
     public void AddCoin(int amount)
     {
@@ -74,14 +114,11 @@ public class UIManager : MonoBehaviour
         coinText.text = "코인: " + coinAmount.ToString();
     }
 
-    void Update()
+    
+public void SetGameCleared()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            settingCanvas.SetActive(!settingCanvas.activeSelf);
-        }
-    }
-    public void DeductCoins(int amount)
+        gameCleared = true;
+    }        public void DeductCoins(int amount)
     {
         coinCount -= amount;
         if (coinCount < 0) coinCount = 0; // 코인 수가 0보다 작아지지 않도록
@@ -90,11 +127,11 @@ public class UIManager : MonoBehaviour
 
     public void OnEndButtonClicked()
     {
-    #if UNITY_EDITOR
-            EditorApplication.isPlaying = false;
-    #else
-            Application.Quit();
-    #endif
+#if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     public void OnStartButtonClicked()
@@ -115,6 +152,7 @@ public class UIManager : MonoBehaviour
         isGoblinActive = true; // 고블린 활성화
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
+       
     }
 
     public void LoadGameScene()
@@ -126,21 +164,50 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
     
+    public void TakeDamage(int damage)
+    {
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+        UpdateHearts();
+        UpdateHealthText();  // 체력 텍스트 업데이트
+    }
 
     public void UpdateHearts()
+{
+    // 체력 20마다 하트 1개씩 표시하도록 heartIndex를 설정
+    int heartIndex = Mathf.FloorToInt(currentHealth / 20f);
+    
+    for (int i = 0; i < hearts.Length; i++)
     {
-        float health = playerHealth.currentHealth;
-        int heartIndex = Mathf.FloorToInt(health / 10f);
-        
-        for (int i = 0; i < hearts.Length; i++)
+        // 하트 배열이 비어있지 않고, 할당이 되었는지 확인하는 코드 추가
+        if (hearts[i] == null)
         {
-            if (hearts[i] == null)
-            {
-                Debug.LogWarning($"hearts[{i}] is not assigned.");
-                continue;
-            }
-            hearts[i].enabled = i < heartIndex;
+            Debug.LogWarning($"hearts[{i}] is not assigned.");
+            continue;
         }
+        
+        // 체력에 따라 하트 활성화 여부 결정
+        hearts[i].enabled = i < heartIndex;
+    }
+    
+    Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
+}
+
+private void UpdateHealthText()
+{
+    if (healthText != null)
+    {
+        healthText.text = currentHealth.ToString() + "/100";
+    }
+    else
+    {
+        Debug.LogWarning("healthText is not assigned.");
+    }
+}
+
+    public void OnMonsterAttack()
+    {
+        TakeDamage(20);  // 몬스터 공격 시 체력 20 감소
     }
 
     public void OnReturnButtonClicked()
@@ -163,8 +230,6 @@ public class UIManager : MonoBehaviour
     {
         LoadGameScene();
     }
-
-
 
 
     public void CloseShopCanvas()
@@ -250,6 +315,16 @@ public class UIManager : MonoBehaviour
             // 고블린의 활성화 메서드를 호출하여 동작 시작
             currentEnemy.GetComponent<GoblinController>().ActivateGoblin();
         }
+    }
+    public void RestoreHealth(int amount)
+    {
+        currentHealth += amount;
+        if (currentHealth > maxHealth)
+        {
+            currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
+        }
+        UpdateHearts();
+        UpdateHealthText();  // 체력 텍스트 업데이트
     }
 
     
