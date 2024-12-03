@@ -43,6 +43,11 @@ public class MonsterController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         rigid = GetComponent<Rigidbody2D>();
         player = GameObject.FindGameObjectWithTag("Player").transform;
+<<<<<<< Updated upstream
+=======
+
+        Invoke("Think", 5);
+>>>>>>> Stashed changes
     }
 
     private void Update()

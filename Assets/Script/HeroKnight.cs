@@ -7,10 +7,17 @@ public class HeroKnight : MonoBehaviour
     [SerializeField] private float jumpForce = 7.5f;
     [SerializeField] private float rollForce = 6.0f;
     [SerializeField] private GameObject slideDustPrefab;
-
+    [SerializeField] private AudioClip jumpSound;
+    [SerializeField] private AudioClip attackSound;
+    [SerializeField] private AudioClip damageSound;
+    [SerializeField] private AudioClip walkSound;
+    
+    AudioSource audioSource;
     private UIManager uiManager;
+    private AudioClip soundEffect;
 
     private Animator animator;
+    
     private Rigidbody2D rb;
     private Sensor_HeroKnight groundSensor;
     private Sensor_HeroKnight wallSensorR1;
@@ -19,6 +26,10 @@ public class HeroKnight : MonoBehaviour
     private Sensor_HeroKnight wallSensorL2;
 
     private bool isWallSliding = false;
+    private float footstepTimer = 0f;
+    private float footstepInterval = 0.4f; // 1초로 설정[1]
+    private bool isWalking = false;
+
     private bool isGrounded = false;
     private bool isRolling = false;
     private bool isChargingJump = false;
@@ -49,7 +60,7 @@ public class HeroKnight : MonoBehaviour
     void Start() {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
-        
+        audioSource = GetComponent<AudioSource>();
         InitializeSensors();
         currentHealth = maxHealth;  // 최대 체력 설정
         uiManager = GetComponent<UIManager>();
@@ -72,6 +83,7 @@ public class HeroKnight : MonoBehaviour
         wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
     }
 
+<<<<<<< Updated upstream
     public void RestoreHealth(int amount)
     {
         currentHealth += amount;
@@ -82,6 +94,8 @@ public class HeroKnight : MonoBehaviour
         Debug.Log("현재 체력: " + currentHealth);
 
     }
+=======
+>>>>>>> Stashed changes
 
     private void UpdateTimers()
     {
@@ -182,6 +196,7 @@ public class HeroKnight : MonoBehaviour
             currentAttack = 1;
 
         animator.SetTrigger("Attack" + currentAttack);
+        audioSource.PlayOneShot(attackSound);
         timeSinceLastAttack = 0.0f;
         
         // 공격 실행
@@ -214,6 +229,7 @@ public class HeroKnight : MonoBehaviour
 
     private void Jump()
     {
+        audioSource.PlayOneShot(jumpSound);
         animator.SetBool("IdleBlock", false);
         isChargingJump = false;
         animator.SetTrigger("Jump");
@@ -235,6 +251,16 @@ public class HeroKnight : MonoBehaviour
     {
         idleDelay = 0.05f;
         animator.SetInteger("AnimState", 1);
+        
+        // 타이머 업데이트
+        footstepTimer += Time.deltaTime;
+        
+        // 1초마다 발소리 재생
+        if (footstepTimer >= footstepInterval && isGrounded)
+        {
+            audioSource.PlayOneShot(walkSound);
+            footstepTimer = 0f; // 타이머 리셋
+        }
     }
 
     private void SetIdleState()
