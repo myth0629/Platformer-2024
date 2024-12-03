@@ -79,12 +79,7 @@ public void ShowClearCanvas()
     {
         clearCanvas.SetActive(true);
 
-        // ScrollingText 활성화 및 초기화
-        if (scrollingText != null)
-        {
-            scrollingText.gameObject.SetActive(true);
-            scrollingText.ResetPosition(); // 초기 위치로 리셋
-        }
+        
     }
 }
 

@@ -63,6 +63,7 @@ public class HeroKnight : MonoBehaviour
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         audioSource = GetComponent<AudioSource>();
+        audioSource.volume = 0.5f;
         InitializeSensors();
         currentHealth = maxHealth;  // 최대 체력 설정
         uiManager = GetComponent<UIManager>();
