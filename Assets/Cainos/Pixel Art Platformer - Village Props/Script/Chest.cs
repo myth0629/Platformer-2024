@@ -7,6 +7,9 @@ namespace Cainos.PixelArtPlatformer_VillageProps
 {
     public class Chest : MonoBehaviour
     {
+        public GameObject healthItem;
+        public Transform spawnPoint; 
+
         [FoldoutGroup("Reference")]
         public Animator animator;
 
@@ -32,6 +35,20 @@ namespace Cainos.PixelArtPlatformer_VillageProps
         public void Close()
         {
             IsOpened = false;
+        }
+
+        private void OnTriggerEnter2D(Collider2D other) {
+            if(other.gameObject.CompareTag("Player"))
+            {
+                Open();
+                SpawnHealthItem();
+                GetComponent<Collider2D>().enabled = false;
+            }
+        }
+
+        public void SpawnHealthItem()
+        {
+            Instantiate(healthItem, spawnPoint.position, Quaternion.identity);
         }
     }
 }

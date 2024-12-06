@@ -48,8 +48,8 @@ public class HeroKnight : MonoBehaviour
 
     public float currentHealth;
     public float maxHealth = 50;
-    public float attackRange = 1.5f;
-    public int attackDamage = 10;
+    public float attackRange = 2f;
+    public float attackDamage = 10;
     public LayerMask enemyLayer;
     public bool isInvincible;
     public LayerMask groundLayer;
@@ -93,9 +93,9 @@ public class HeroKnight : MonoBehaviour
         wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
     }
 
-    public void RestoreHealth(int amount)
+    public void RestoreHealth()
     {
-        currentHealth += amount;
+        currentHealth += 10;
         if (currentHealth > maxHealth)
         {
             currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
@@ -210,7 +210,7 @@ public class HeroKnight : MonoBehaviour
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, attackRange, enemyLayer);
         foreach(Collider2D enemy in hitEnemies)
         {
-            enemy.GetComponent<GoblinController>().TakeDamage(attackDamage);
+            enemy.GetComponent<EnemyController>().TakeDamage(attackDamage);
         }
         
         // 쿨타임 시작
@@ -225,6 +225,12 @@ public class HeroKnight : MonoBehaviour
         yield return new WaitForSeconds(attackCooldown);
         
         canAttack = true;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
     }
 
     private void Roll()
@@ -302,7 +308,7 @@ public class HeroKnight : MonoBehaviour
     IEnumerator DamageCoolTime()
     {
         isInvincible = true;
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(1.5f);
         isInvincible = false;
     }
 
@@ -312,7 +318,6 @@ public class HeroKnight : MonoBehaviour
 
         GetComponent<HeroKnight>().enabled = false; // 조작 정지
         rb.velocity = Vector2.zero; // 이동중이라면 정지
-        rb.isKinematic = true; // 물리 작용 비활성화
     }
 
     private void AE_SlideDust()

@@ -2,16 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MonsterController : MonoBehaviour
+public class EnemyController : MonoBehaviour
 {
     [Header("Components")]
     private Animator animator;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rigid;
-    private Transform player;
-    [SerializeField] private float maxHealth = 100f;
+    public Transform player;
+    [SerializeField] private float maxHealth = 50f;
     [SerializeField] private float currentHealth;
-    [SerializeField] private float knockbackForce = 5f;
     [SerializeField] private float invincibilityDuration = 0.3f;
     
     private bool isInvincible = false;
@@ -24,7 +23,7 @@ public class MonsterController : MonoBehaviour
     [SerializeField] private float attackRange = 1.5f;
     [SerializeField] private float damage = 10f;
     [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private float attackCooldown = 1f; // 공격 쿨타임 (초)
+    [SerializeField] private float attackCooldown = 2f; // 공격 쿨타임 (초)
     private float lastAttackTime = 0f; // 마지막 공격 시간
 
     private bool isTracing = false;
@@ -33,6 +32,7 @@ public class MonsterController : MonoBehaviour
 
     private void Start()
     {
+        currentHealth = maxHealth;
         InitializeComponents();
         Invoke("Think", 5);
     }
@@ -61,11 +61,6 @@ public class MonsterController : MonoBehaviour
             isTracing = false;
             StopMovement();
             AttackPlayer();
-        }
-        else if (distanceToPlayer <= detectionRange)
-        {
-            isTracing = true;
-            ChasePlayer();
         }
         else
         {
@@ -100,19 +95,6 @@ public class MonsterController : MonoBehaviour
         rigid.velocity = new Vector2(nextMove * speed, rigid.velocity.y);
     }
 
-    private void ChasePlayer()
-    {
-        if (Physics2D.Raycast(transform.position, Vector2.down, 0.1f, groundLayer))
-        {
-            float direction = Mathf.Sign(player.position.x - transform.position.x);
-            rigid.velocity = new Vector2(direction * speed, rigid.velocity.y);
-        }
-        else
-        {
-            StopMovement();
-        }
-    }
-
     private void AttackPlayer()
 {
     // 현재 시간과 마지막 공격 시간을 비교하여 쿨타임 체크
@@ -137,7 +119,7 @@ public class MonsterController : MonoBehaviour
     {
         if (!isTracing)
         {
-            nextMove = Random.Range(-1, 2);
+            nextMove = Random.Range(-2, 3);
             Invoke("Think", Random.Range(2f, 5f));
         }
     }
@@ -167,12 +149,9 @@ public class MonsterController : MonoBehaviour
 
         currentHealth -= damage;
         
-        // 피격 효과
-        StartCoroutine(HitEffect());
+        animator.SetTrigger("Hurt");
+        Debug.Log("Attack!!");
         
-        // 넉백 적용
-        ApplyKnockback();
-
         // 체력 확인
         if (currentHealth <= 0)
         {
@@ -180,36 +159,10 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    private IEnumerator HitEffect()
-    {
-        isInvincible = true;
-        
-        // 피격 색상 변경
-        material.color = Color.red;
-        
-        // 피격 애니메이션
-        animator.SetTrigger("Hurt");
-        
-        yield return new WaitForSeconds(invincibilityDuration);
-        
-        // 원래 색상으로 복구
-        material.color = originalColor;
-        isInvincible = false;
-    }
-
-    private void ApplyKnockback()
-    {
-        // 플레이어 위치 기준으로 넉백 방향 결정
-        float direction = transform.position.x < player.position.x ? -1 : 1;
-        
-        // 넉백 힘 적용
-        rigid.velocity = new Vector2(direction * knockbackForce, rigid.velocity.y);
-    }
-
     private void Die()
     {
         // 사망 애니메이션
-        animator.SetBool("isDeath", true);
+        animator.SetTrigger("isDeath");
         
         // 물리 효과 비활성화
         rigid.velocity = Vector2.zero;

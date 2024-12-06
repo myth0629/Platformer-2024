@@ -2,20 +2,20 @@ using UnityEngine;
 
 public class HpItem : MonoBehaviour
 {
-    public int restoreAmount = 20;  // 회복할 체력 양
     private HeroKnight heroKnight;
 
     void Start()
     {
-        heroKnight = FindObjectOfType<HeroKnight>();  // HeroKnight 찾기
+        heroKnight = GameObject.Find("HeroKnight").GetComponent<HeroKnight>();
     }
 
-    public void OnUse()
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (heroKnight != null)
+        if (other.gameObject.CompareTag("Player"))
         {
-            
-            Destroy(gameObject);  // 아이템 사용 후 파괴
+            heroKnight.RestoreHealth();
+
+            Destroy(gameObject);
         }
     }
 }

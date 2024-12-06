@@ -20,18 +20,20 @@ public class DamageObject3 : MonoBehaviour
         
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    private void OnCollisionEnter2D(Collision2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.gameObject.CompareTag("Player"))
         {
             // 플레이어에게 데미지를 입힘
-            HeroKnight playerHealth = other.GetComponent<HeroKnight>();
+            HeroKnight playerHealth = other.gameObject.GetComponent<HeroKnight>();
             if (playerHealth != null)
             {
                 playerHealth.TakeDamage(damageAmount);
                 Debug.Log("Player Hit!!");
+
+                Destroy(gameObject);
             }
         }
-        Destroy(gameObject);
+        
     }
 }

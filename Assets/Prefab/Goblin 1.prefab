@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 7.13, y: -2.83, z: 0}
-  m_LocalScale: {x: 3.5, y: 3.5, z: 1}
+  m_LocalScale: {x: 4, y: 4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -162,7 +162,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 1
-  m_Constraints: 4
+  m_Constraints: 6
 --- !u!95 &3552459399841996311
 Animator:
   serializedVersion: 7
@@ -197,8 +197,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44788b58fbf8341fd94675ee0d102ec4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  detectionRange: 5
+  player: {fileID: 0}
+  maxHealth: 50
+  currentHealth: 0
+  invincibilityDuration: 0.3
+  speed: 3
+  detectionRange: 3
   attackRange: 1.5
   damage: 10
-  speed: 2
-  isTracing: 0
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  attackCooldown: 1.5
