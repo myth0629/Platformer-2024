@@ -14,7 +14,6 @@ public class HeroKnight : MonoBehaviour
     [SerializeField] private AudioClip landSound;
     
     AudioSource audioSource;
-    private UIManager uiManager;
     private AudioClip soundEffect;
 
     private Animator animator;
@@ -42,9 +41,12 @@ public class HeroKnight : MonoBehaviour
     private float idleDelay = 0.0f;
     private float rollDuration = 8.0f / 14.0f;
     private float rollTime;
+    public float baseJumpForce = 5f; // 기본 점프 힘
+    private float maxChargeMultiplier = 1.5f; // 최대 차지 배율
+    private float chargeRate = 0.05f; // 차지 증가율
 
     private float jumpTimeLimit = 3.0f;
-    private float jumpChargeTime = 1.0f;
+    private float jumpChargeTime = 0;
 
     public float currentHealth;
     public float maxHealth = 50;
@@ -66,7 +68,6 @@ public class HeroKnight : MonoBehaviour
         audioSource.volume = 0.5f;
         InitializeSensors();
         currentHealth = maxHealth;  // 최대 체력 설정
-        uiManager = GetComponent<UIManager>();
     }
 
     void Update()
@@ -95,13 +96,14 @@ public class HeroKnight : MonoBehaviour
 
     public void RestoreHealth()
     {
+        UIManager uiManager = FindObjectOfType<UIManager>();
         currentHealth += 10;
         if (currentHealth > maxHealth)
         {
             currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
         }
+        uiManager.UpdateHearts();
         Debug.Log("현재 체력: " + currentHealth);
-
     }
 
     private void UpdateTimers()
@@ -241,24 +243,28 @@ public class HeroKnight : MonoBehaviour
     }
 
     private void Jump()
-    {
-        audioSource.PlayOneShot(jumpSound);
-        animator.SetBool("IdleBlock", false);
-        isChargingJump = false;
-        animator.SetTrigger("Jump");
-        isGrounded = false;
-        animator.SetBool("Grounded", isGrounded);
-        rb.AddForce(Vector3.up * jumpForce * jumpChargeTime, ForceMode2D.Impulse);
-        jumpChargeTime = 1.0f;
-    }
+{
+    audioSource.PlayOneShot(jumpSound);
+    animator.SetBool("IdleBlock", false);
+    isChargingJump = false;
+    animator.SetTrigger("Jump");
+    isGrounded = false;
+    animator.SetBool("Grounded", isGrounded);
+    
+    // 차지된 힘을 기본 점프력에 곱하여 적용
+    float finalJumpForce = baseJumpForce * (1 + (jumpChargeTime - 0.5f));
+    rb.AddForce(Vector3.up * finalJumpForce, ForceMode2D.Impulse);
+    jumpChargeTime = 0.5f;
+}
 
-    private void ChargeJump()
-    {
-        animator.SetBool("IdleBlock", true);
-        isChargingJump = true;
-        if (jumpTimeLimit > jumpChargeTime)
-            jumpChargeTime += 0.1f;
-    }
+private void ChargeJump()
+{
+    rb.velocity = new Vector2(0, rb.velocity.y);
+    animator.SetBool("IdleBlock", true);
+    isChargingJump = true;
+    if (jumpTimeLimit > jumpChargeTime)
+        jumpChargeTime += chargeRate; // 더 작은 값으로 증가
+}
 
     private void SetRunningState()
     {
@@ -285,8 +291,8 @@ public class HeroKnight : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        if (currentHealth <= 0)
-            return;
+        UIManager uiManager = FindObjectOfType<UIManager>();
+         if (currentHealth <= 0 || isInvincible) return;
 
         currentHealth -= damage;
         animator.SetTrigger("Hurt");
@@ -294,6 +300,7 @@ public class HeroKnight : MonoBehaviour
             currentHealth = 0;
 
         Debug.Log("플레이어 hp : " + currentHealth);
+        uiManager.UpdateHearts();
 
         if (currentHealth <= 0)
         {
@@ -314,10 +321,12 @@ public class HeroKnight : MonoBehaviour
 
     public void Death()
     {
+        UIManager uiManager = FindObjectOfType<UIManager>();
         animator.SetTrigger("Death");
 
         GetComponent<HeroKnight>().enabled = false; // 조작 정지
         rb.velocity = Vector2.zero; // 이동중이라면 정지
+        uiManager.ShowEndCanvas();
     }
 
     private void AE_SlideDust()

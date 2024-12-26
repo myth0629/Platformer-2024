@@ -1,134 +1,64 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
-    [Header("Components")]
     private Animator animator;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rigid;
-    public Transform player;
+    
+    [Header("Stats")]
     [SerializeField] private float maxHealth = 50f;
     [SerializeField] private float currentHealth;
-    [SerializeField] private float invincibilityDuration = 0.3f;
-    
+    // speed를 직접 값을 할당하고 더 큰 값으로 설정
+    private float speed = 3f;  
+    // nextMove를 더 명확한 값으로 설정
+    private int nextMove = 1;  // 1: 오른쪽, -1: 왼쪽
+    private float moveThreshold = 0.1f;
     private bool isInvincible = false;
-    private Material material;
-    private Color originalColor;
-
-    [Header("Stats")]
-    [SerializeField] private float speed = 5f;
-    [SerializeField] private float detectionRange = 5f;
-    [SerializeField] private float attackRange = 1.5f;
-    [SerializeField] private float damage = 10f;
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private float attackCooldown = 2f; // 공격 쿨타임 (초)
-    private float lastAttackTime = 0f; // 마지막 공격 시간
-
-    private bool isTracing = false;
-    private int nextMove = 0;
-    private float moveThreshold = 0.1f; // 움직임 감지 임계값
 
     private void Start()
     {
         currentHealth = maxHealth;
-        InitializeComponents();
-        Invoke("Think", 5);
-    }
-
-    private void InitializeComponents()
-    {
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         rigid = GetComponent<Rigidbody2D>();
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        
+        // 속도 직접 설정
+        rigid.velocity = new Vector2(nextMove * speed, rigid.velocity.y);
+    }
 
-        Invoke("Think", 5);
+    private void FixedUpdate()  // Update 대신 FixedUpdate 사용
+    {
+        // 이동 실행
+        Patrol();
+        
+        // 앞쪽 지형 체크
+        CheckGroundAhead();
     }
 
     private void Update()
     {
-        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
-        UpdateBehavior(distanceToPlayer);
+        // 애니메이션 업데이트만 Update에서 처리
         UpdateAnimationState();
     }
 
-    private void UpdateBehavior(float distanceToPlayer)
-    {
-        if (distanceToPlayer <= attackRange)
-        {
-            isTracing = false;
-            StopMovement();
-            AttackPlayer();
-        }
-        else
-        {
-            isTracing = false;
-            Patrol();
-            if (!isTracing) CheckGroundAhead();
-        }
-    }
 
     private void UpdateAnimationState()
     {
         float currentSpeed = Mathf.Abs(rigid.velocity.x);
         bool isMoving = currentSpeed > moveThreshold;
         
-        // 이동 애니메이션 설정
         animator.SetInteger("WalkSpeed", isMoving ? 1 : 0);
         
-        // 이동 중일 때만 방향 전환
         if (isMoving)
         {
             spriteRenderer.flipX = rigid.velocity.x < 0;
         }
     }
 
-    private void StopMovement()
-    {
-        rigid.velocity = new Vector2(0, rigid.velocity.y);
-    }
-
     private void Patrol()
     {
         rigid.velocity = new Vector2(nextMove * speed, rigid.velocity.y);
-    }
-
-    private void AttackPlayer()
-{
-    // 현재 시간과 마지막 공격 시간을 비교하여 쿨타임 체크
-    if (Time.time - lastAttackTime >= attackCooldown)
-    {
-        // 공격 애니메이션 실행
-        animator.SetTrigger("isAttack");
-        
-        // 플레이어에게 데미지 적용
-        HeroKnight playerHealth = player.GetComponent<HeroKnight>();
-        if (playerHealth != null)
-        {
-            playerHealth.TakeDamage(damage);
-        }
-        
-        // 마지막 공격 시간 업데이트
-        lastAttackTime = Time.time;
-    }
-}
-
-    private void Think()
-    {
-        if (!isTracing)
-        {
-            nextMove = Random.Range(-2, 3);
-            Invoke("Think", Random.Range(2f, 5f));
-        }
-    }
-
-    private void Turn()
-    {
-        nextMove *= -1;
-        CancelInvoke();
-        Invoke("Think", 2);
     }
 
     private void CheckGroundAhead()
@@ -143,6 +73,11 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    private void Turn()
+    {
+        nextMove *= -1;
+    }
+
     public void TakeDamage(float damage)
     {
         if (isInvincible) return;
@@ -152,7 +87,6 @@ public class EnemyController : MonoBehaviour
         animator.SetTrigger("Hurt");
         Debug.Log("Attack!!");
         
-        // 체력 확인
         if (currentHealth <= 0)
         {
             Die();
@@ -171,7 +105,7 @@ public class EnemyController : MonoBehaviour
         // 모든 행동 중지
         this.enabled = false;
         
-        // 사망 처리 (선택적)
-        Destroy(gameObject, 1f); // 1초 후 오브젝트 제거
+        // 1초 후 오브젝트 제거
+        Destroy(gameObject, 1f);
     }
 }

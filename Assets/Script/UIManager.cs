@@ -19,8 +19,6 @@ public class UIManager : MonoBehaviour
 
     private bool isGoblinActive = false; // 고블린이 활성화되었는지 여부
 
-    public int maxHealth = 100;
-    private int currentHealth;
 
     public Text healthText;
     public GameObject playerCanvas;
@@ -37,12 +35,12 @@ public class UIManager : MonoBehaviour
 
     public Camera mainCamera;
     public Camera camera1;
+    public HeroKnight heroKnight = FindObjectOfType<HeroKnight>();
 
     public GameObject HeroKnight;
     public GameObject enemyPrefab;
     public Transform[] enemySpawnPoints;
     public ScrollingText scrollingText;
-
 
     private bool isTutorialActive = false;
     private GameObject currentEnemy;
@@ -52,8 +50,8 @@ public class UIManager : MonoBehaviour
 
     void Start()
     { 
+        heroKnight = HeroKnight.GetComponent<HeroKnight>();
         settingCanvas.SetActive(false);
-        currentHealth = maxHealth;  // 초기 체력 설정
         UpdateHearts();  // 하트 UI 업데이트
         UpdateHealthText();
         // ShowMainCanvas();
@@ -159,18 +157,11 @@ public void SetGameCleared()
         SceneManager.LoadScene("MainMenu");
     }
     
-    public void TakeDamage(int damage)
-    {
-        currentHealth -= damage;
-        if (currentHealth < 0) currentHealth = 0;
-        UpdateHearts();
-        UpdateHealthText();  // 체력 텍스트 업데이트
-    }
 
     public void UpdateHearts()
 {
     // 체력 20마다 하트 1개씩 표시하도록 heartIndex를 설정
-    int heartIndex = Mathf.FloorToInt(currentHealth / 20f);
+    int heartIndex = Mathf.FloorToInt(heroKnight.currentHealth / 10f);
     
     for (int i = 0; i < hearts.Length; i++)
     {
@@ -185,14 +176,14 @@ public void SetGameCleared()
         hearts[i].enabled = i < heartIndex;
     }
     
-    Debug.Log($"Updated hearts: currentHealth = {currentHealth}, heartIndex = {heartIndex}");
+    Debug.Log($"Updated hearts: currentHealth = {heroKnight.currentHealth}, heartIndex = {heartIndex}");
 }
 
 private void UpdateHealthText()
 {
     if (healthText != null)
     {
-        healthText.text = currentHealth.ToString() + "/100";
+        healthText.text = heroKnight.currentHealth.ToString() + "/100";
     }
     else
     {
@@ -200,10 +191,7 @@ private void UpdateHealthText()
     }
 }
 
-    public void OnMonsterAttack()
-    {
-        TakeDamage(20);  // 몬스터 공격 시 체력 20 감소
-    }
+
 
     public void OnReturnButtonClicked()
     {
@@ -311,17 +299,6 @@ private void UpdateHealthText()
             currentEnemy.GetComponent<GoblinController>().ActivateGoblin();
         }
     }
-    public void RestoreHealth(int amount)
-    {
-        currentHealth += amount;
-        if (currentHealth > maxHealth)
-        {
-            currentHealth = maxHealth;  // 최대 체력을 넘지 않도록 제한
-        }
-        UpdateHearts();
-        UpdateHealthText();  // 체력 텍스트 업데이트
-    }
-
     
 
     private void SetCanvasActive(bool isActive, params GameObject[] canvases)
@@ -331,4 +308,14 @@ private void UpdateHealthText()
             canvas.SetActive(isActive);
         }
     }
+
+    public void ShowEndCanvas() {
+    if (endCanvas != null) {      
+        endCanvas.SetActive(true);   // End Canvas만 활성화
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    } else {
+        Debug.LogWarning("endCanvas가 할당되지 않았습니다.");
+    }
+}
 }

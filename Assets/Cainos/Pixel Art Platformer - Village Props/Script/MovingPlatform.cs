@@ -30,7 +30,7 @@ namespace Cainos.PixelArtPlatformer_VillageProps
 
             foreach (Transform t in onPlatformObjects)
             {
-                t.Translate(velocity * Time.fixedDeltaTime);
+                transform.Translate(velocity * Time.fixedDeltaTime);
             }
         }
 

@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdb16ae9c30244b86a64aeb8c8b5f4af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageObjectPrefab: {fileID: 11056301321218467, guid: 8e2c2686ebce6466883befb7b9a004c8, type: 3}
+  damageObjectPrefab: {fileID: 1844439788940858916, guid: 1f6212d61fb084300a938e26f5a021b1, type: 3}
   spawnInterval: 3
   spawnPosition: {x: 0, y: 0, z: 0}
+  spawnRotation: {x: 0, y: 0, z: 0}
