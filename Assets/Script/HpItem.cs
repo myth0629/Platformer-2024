@@ -11,6 +11,7 @@ public class HpItem : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        Debug.Log("Heal");
         if (other.gameObject.CompareTag("Player"))
         {
             heroKnight.RestoreHealth();

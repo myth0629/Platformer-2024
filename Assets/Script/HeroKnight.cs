@@ -96,7 +96,7 @@ public class HeroKnight : MonoBehaviour
 
     public void RestoreHealth()
     {
-        UIManager uiManager = FindObjectOfType<UIManager>();
+        UIManager uiManager = FindAnyObjectByType<UIManager>();
         currentHealth += 10;
         if (currentHealth > maxHealth)
         {
@@ -120,7 +120,7 @@ public class HeroKnight : MonoBehaviour
 
     private void CheckGroundStatus()
     {
-        Vector2 boxSize = new Vector2(0.8f, 0.5f);
+        Vector2 boxSize = new Vector2(0.5f, 0.3f);
         RaycastHit2D hit = Physics2D.BoxCast(transform.position, boxSize, 0f, Vector2.down, groundCheckDistance, groundLayer);
 
         bool newGroundedState = hit.collider != null;

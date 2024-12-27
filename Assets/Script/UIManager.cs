@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine.SceneManagement;
-#endif
 
 public class UIManager : MonoBehaviour
 {
@@ -35,7 +33,6 @@ public class UIManager : MonoBehaviour
 
     public Camera mainCamera;
     public Camera camera1;
-    public HeroKnight heroKnight = FindObjectOfType<HeroKnight>();
 
     public GameObject HeroKnight;
     public GameObject enemyPrefab;
@@ -44,16 +41,13 @@ public class UIManager : MonoBehaviour
 
     private bool isTutorialActive = false;
     private GameObject currentEnemy;
-
     public Text coinText; // 코인 텍스트 UI 요소
     public int coinAmount = 0; // 코인 변수
 
     void Start()
     { 
-        heroKnight = HeroKnight.GetComponent<HeroKnight>();
         settingCanvas.SetActive(false);
         UpdateHearts();  // 하트 UI 업데이트
-        UpdateHealthText();
         // ShowMainCanvas();
         UpdateCoinText(); // 초기 코인 텍스트 업데이트
         Cursor.visible = true;
@@ -64,7 +58,10 @@ public class UIManager : MonoBehaviour
 {
     if (Input.GetKeyDown(KeyCode.Escape))
     {
-        settingCanvas.SetActive(!settingCanvas.activeSelf);
+        bool isActive = !settingCanvas.activeSelf;
+        settingCanvas.SetActive(isActive);
+        Cursor.visible = isActive;
+        Cursor.lockState = isActive ? CursorLockMode.None : CursorLockMode.Locked;
     }
     if (gameCleared) // 게임 클리어 상태일 때
         {
@@ -159,37 +156,27 @@ public void SetGameCleared()
     
 
     public void UpdateHearts()
-{
-    // 체력 20마다 하트 1개씩 표시하도록 heartIndex를 설정
-    int heartIndex = Mathf.FloorToInt(heroKnight.currentHealth / 10f);
-    
-    for (int i = 0; i < hearts.Length; i++)
     {
-        // 하트 배열이 비어있지 않고, 할당이 되었는지 확인하는 코드 추가
-        if (hearts[i] == null)
+        HeroKnight heroKnight = FindAnyObjectByType<HeroKnight>();
+        // 체력 10마다 하트 1개씩 표시하도록 heartIndex를 설정
+        int heartIndex = Mathf.FloorToInt(heroKnight.currentHealth / 10f);
+        
+        for (int i = 0; i < hearts.Length; i++)
         {
-            Debug.LogWarning($"hearts[{i}] is not assigned.");
-            continue;
+            // 하트 배열이 비어있지 않고, 할당이 되었는지 확인하는 코드 추가
+            if (hearts[i] == null)
+            {
+                Debug.LogWarning($"hearts[{i}] is not assigned.");
+                continue;
+            }
+            
+            // 체력에 따라 하트 활성화 여부 결정
+            hearts[i].enabled = i < heartIndex;
         }
         
-        // 체력에 따라 하트 활성화 여부 결정
-        hearts[i].enabled = i < heartIndex;
+        Debug.Log($"Updated hearts: currentHealth = {heroKnight.currentHealth}, heartIndex = {heartIndex}");
     }
-    
-    Debug.Log($"Updated hearts: currentHealth = {heroKnight.currentHealth}, heartIndex = {heartIndex}");
-}
 
-private void UpdateHealthText()
-{
-    if (healthText != null)
-    {
-        healthText.text = heroKnight.currentHealth.ToString() + "/100";
-    }
-    else
-    {
-        Debug.LogWarning("healthText is not assigned.");
-    }
-}
 
 
 

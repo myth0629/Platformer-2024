@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine.SceneManagement;
-#endif
 
 public class MainSceneUI : MonoBehaviour
 {
@@ -35,6 +33,12 @@ public class MainSceneUI : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+    
+    public void OnBeforeButtonClicked()
+    {
+        SetCanvasActive(true, mainCanvas);
+        SetCanvasActive(false, tutorialCanvas);
     }
 
     public void OnStartButtonClicked()

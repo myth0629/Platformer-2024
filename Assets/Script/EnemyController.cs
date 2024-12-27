@@ -7,14 +7,19 @@ public class EnemyController : MonoBehaviour
     private Rigidbody2D rigid;
     
     [Header("Stats")]
-    [SerializeField] private float maxHealth = 50f;
+    [SerializeField] private float maxHealth = 20f;
     [SerializeField] private float currentHealth;
+    [SerializeField] private float damage = 10f;
+    [SerializeField] private float attackCooldown = 1f;
+    private float lastAttackTime;
     // speed를 직접 값을 할당하고 더 큰 값으로 설정
     private float speed = 3f;  
     // nextMove를 더 명확한 값으로 설정
     private int nextMove = 1;  // 1: 오른쪽, -1: 왼쪽
     private float moveThreshold = 0.1f;
     private bool isInvincible = false;
+    public float damage_value = 10f;
+
 
     private void Start()
     {
@@ -59,6 +64,29 @@ public class EnemyController : MonoBehaviour
     private void Patrol()
     {
         rigid.velocity = new Vector2(nextMove * speed, rigid.velocity.y);
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        Debug.Log("Hit");
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            Debug.Log("Player Detected");
+            // 쿨다운 체크
+            if (Time.time >= lastAttackTime + attackCooldown)
+            {
+                // PlayerHealth 컴포넌트 가져오기
+                HeroKnight heroKnight = collision.gameObject.GetComponent<HeroKnight>();
+                
+                if (heroKnight != null)
+                {
+                    animator.SetTrigger("isAttack");
+                    // 데미지 적용
+                    heroKnight.TakeDamage(damage_value);
+                    lastAttackTime = Time.time;
+                }
+            }
+        }
     }
 
     private void CheckGroundAhead()

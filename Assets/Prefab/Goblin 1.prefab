@@ -120,7 +120,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -197,15 +197,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44788b58fbf8341fd94675ee0d102ec4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
   maxHealth: 50
   currentHealth: 0
-  invincibilityDuration: 0.3
-  speed: 3
-  detectionRange: 3
-  attackRange: 1.5
   damage: 10
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 8
   attackCooldown: 1.5
+  damage_value: 10
